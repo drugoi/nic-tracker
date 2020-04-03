@@ -49,14 +49,14 @@ const parseNic = () => {
         bot.telegram.sendMessage(process.env.TG_OWNER_ID, message, {
           parse_mode: 'markdown',
         });
-      } else {
-        bot.telegram.sendMessage(process.env.TG_OWNER_ID, 'За последние пять минут новых доменов не появилось', {
-          parse_mode: 'markdown',
-        });
       }
     })
     .catch((err) => {
       console.error('err', err);
+      const message = (err && err.message) || err;
+      bot.telegram.sendMessage(process.env.TG_OWNER_ID, message, {
+        parse_mode: 'markdown',
+      });
     });
 };
 
