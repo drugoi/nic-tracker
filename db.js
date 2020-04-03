@@ -1,0 +1,14 @@
+const low = require('lowdb');
+const FileSync = require('lowdb/adapters/FileSync');
+
+const adapter = new FileSync('domains.json');
+const db = low(adapter);
+
+db._.mixin({
+  batchUnique: (array, key, items) => {
+    const cleanItems = items.filter((newItem) => array.findIndex((el) => el[key] === newItem[key]) === -1);
+    return array.push(...cleanItems);
+  },
+});
+
+module.exports = db;

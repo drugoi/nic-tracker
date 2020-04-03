@@ -1,0 +1,29 @@
+{
+  "name": "nic-tracker",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Nikita Bayev <nikita@bayev.kz> (http://bayev.kz/)",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^6.8.0",
+    "eslint-config-airbnb-base": "^14.1.0",
+    "eslint-plugin-import": "^2.20.2"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.3",
+    "dotenv": "^8.2.0",
+    "lodash.differenceby": "^4.8.0",
+    "lowdb": "^1.0.0",
+    "node-cron": "^2.0.3",
+    "parse-whois": "^1.0.0",
+    "request": "^2.88.2",
+    "request-promise": "^4.2.5",
+    "telegraf": "^3.37.0",
+    "whois": "^2.12.1"
+  }
+}
