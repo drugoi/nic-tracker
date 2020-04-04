@@ -62,6 +62,4 @@ const parseNic = () => {
     });
 };
 
-cron.schedule('* * * * *', () => parseNic()).start();
-
-parseNic();
+cron.schedule('*/2 * * * *', () => parseNic()).start();
