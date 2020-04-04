@@ -4,7 +4,7 @@ require('dotenv').config();
 const rp = require('request-promise');
 const $ = require('cheerio');
 const cron = require('node-cron');
-const differenceBy = require('lodash.differenceby');
+const xorBy = require('lodash.xorby');
 
 
 const db = require('./db');
@@ -36,15 +36,15 @@ const parseNic = () => {
         }
       });
 
-      db.get('domains')
-        .batchUnique('domain', newDomains)
-        .write();
+      const existingDomains = db.get('domains').value();
 
-      const differentDomains = differenceBy(newDomains, db.get('domains').value(), 'domain');
+      const transaction = db.get('domains')
+        .batchUnique('domain', newDomains);
 
-      console.log('differentDomains', differentDomains);
+      const differentDomains = xorBy(existingDomains, newDomains, 'domain');
 
       if (differentDomains.length) {
+        transaction.write();
         const message = prepareDomainsMessage(differentDomains);
         bot.telegram.sendMessage(process.env.TG_OWNER_ID, message, {
           parse_mode: 'markdown',
@@ -52,7 +52,8 @@ const parseNic = () => {
       }
     })
     .catch((err) => {
-      console.error('err', err);
+      console.error('parseNic -> err', err);
+
       const message = (err && err.message) || err;
       bot.telegram.sendMessage(process.env.TG_OWNER_ID, message, {
         parse_mode: 'markdown',
@@ -60,6 +61,6 @@ const parseNic = () => {
     });
 };
 
-cron.schedule('*/5 * * * *', () => parseNic()).start();
+cron.schedule('* * * * *', () => parseNic()).start();
 
 parseNic();

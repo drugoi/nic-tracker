@@ -17,7 +17,7 @@
   "dependencies": {
     "cheerio": "^1.0.0-rc.3",
     "dotenv": "^8.2.0",
-    "lodash.differenceby": "^4.8.0",
+    "lodash.xorby": "^4.7.0",
     "lowdb": "^1.0.0",
     "node-cron": "^2.0.3",
     "parse-whois": "^1.0.0",
