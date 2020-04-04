@@ -47,7 +47,7 @@ const parseNic = () => {
       if (differentDomains.length) {
         transaction.write();
         const message = prepareDomainsMessage(differentDomains);
-        bot.telegram.sendMessage(process.env.TG_OWNER_ID, message, {
+        bot.telegram.sendMessage(process.env.TG_CHANNEL_ID, message, {
           parse_mode: 'markdown',
         });
       }
