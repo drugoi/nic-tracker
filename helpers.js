@@ -1,8 +1,8 @@
 const prepareDomainsMessage = (domains) => {
-  let message = '*Появились новые домены:*\n';
+  let message = '*Появились новые домены:*\n\n';
 
-  domains.forEach(({ domain }) => {
-    message += `Домен: ${domain}\n`;
+  domains.forEach(({ domain, date }) => {
+    message += `*Домен:* ${domain} — [Whois](https://nic.kz/cgi-bin/whois?query=${domain})\n*Дата появления:* ${new Date(date)}\n\n`;
   });
 
   return message;

@@ -4,7 +4,6 @@ require('dotenv').config();
 const rp = require('request-promise');
 const $ = require('cheerio');
 const cron = require('node-cron');
-const xorBy = require('lodash.xorby');
 
 
 const db = require('./db');
@@ -29,7 +28,8 @@ const parseNic = () => {
         if ($('a', domain)[0]) {
           const newDomain = {
             domain: $('a', domain).text(),
-            date: $('td:first-child', domain).text(),
+            nicDate: $('td:first-child', domain).text(),
+            date: new Date().getTime(),
           };
 
           newDomains.push(newDomain);
@@ -41,7 +41,8 @@ const parseNic = () => {
       const transaction = db.get('domains')
         .batchUnique('domain', newDomains);
 
-      const differentDomains = xorBy(existingDomains, newDomains, 'domain');
+      const differentDomains = newDomains
+        .filter(({ domain: newDomain }) => !existingDomains.some(({ domain: existDomain }) => existDomain === newDomain));
 
       if (differentDomains.length) {
         transaction.write();
