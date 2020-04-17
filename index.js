@@ -1,3 +1,5 @@
+/* eslint-disable no-await-in-loop */
+/* eslint-disable no-restricted-syntax */
 
 require('dotenv').config();
 
@@ -8,6 +10,7 @@ const cron = require('node-cron');
 
 const db = require('./db');
 const bot = require('./bot');
+const whoisAndParse = require('./whois');
 const { prepareDomainsMessage } = require('./helpers');
 
 const url = 'https://nic.kz/index.jsp';
@@ -15,11 +18,32 @@ const url = 'https://nic.kz/index.jsp';
 db.defaults({ domains: [] })
   .write();
 
+async function parseDomains(domains) {
+  const domainsData = [];
+
+  for (const item of domains) {
+    try {
+      const domainWhois = await whoisAndParse(item.domain);
+
+      domainsData.push({
+        ...item,
+        ...domainWhois,
+      });
+    } catch (error) {
+      domainsData.push({
+        ...item,
+      });
+    }
+  }
+
+  return domainsData;
+}
+
 
 const parseNic = () => {
   console.log('parse nic is running');
   rp(url)
-    .then((html) => {
+    .then(async (html) => {
       const domainsTable = $('#last-ten-table > tbody > tr:nth-child(2) > td > table > tbody', html);
 
       const newDomains = [];
@@ -46,7 +70,9 @@ const parseNic = () => {
 
       if (differentDomains.length) {
         transaction.write();
-        const message = prepareDomainsMessage(differentDomains);
+
+        const extendedDomains = await parseDomains(differentDomains);
+        const message = await prepareDomainsMessage(extendedDomains);
         bot.telegram.sendMessage(process.env.TG_CHANNEL_ID, message, {
           parse_mode: 'markdown',
         });

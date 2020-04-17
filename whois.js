@@ -17,7 +17,9 @@ const whoisAndParse = (domainToParse) => new Promise((resolve, reject) => {
     const clientEmail = whoisData.find((item) => item.attribute.startsWith('Email Address'));
     const clientAddress = whoisData.find((item) => item.attribute.startsWith('Street Address'));
 
-
+    if (!orgName) {
+      return reject(new Error('Whois is not available'));
+    }
     const parsedData = {
       orgName: orgName.value,
       clientName: clientName.value,
@@ -25,7 +27,6 @@ const whoisAndParse = (domainToParse) => new Promise((resolve, reject) => {
       clientEmail: clientEmail.value,
       clientAddress: clientAddress.value,
     };
-
 
     return resolve(parsedData);
   });
@@ -36,6 +37,5 @@ if (domain) {
     console.log('whoisAndParse', res);
   });
 }
-
 
 module.exports = whoisAndParse;
