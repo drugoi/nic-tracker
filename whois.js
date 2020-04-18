@@ -1,7 +1,10 @@
 const whois = require('whois');
 const parser = require('parse-whois');
 
+// For CLI
 const domain = process.argv.slice(2)[0];
+
+const findFieldByAttr = (data, field) => data.find((item) => item.attribute.startsWith(field));
 
 const whoisAndParse = (domainToParse) => new Promise((resolve, reject) => {
   whois.lookup(domainToParse, (err, data) => {
@@ -11,15 +14,16 @@ const whoisAndParse = (domainToParse) => new Promise((resolve, reject) => {
     const whoisData = parser.parseWhoIsData(data);
 
     // TODO: cleanup this mess
-    const orgName = whoisData.find((item) => item.attribute.startsWith('Organization Name'));
-    const clientName = whoisData.find((item) => item.attribute.startsWith('Name'));
-    const clientPhoneNumber = whoisData.find((item) => item.attribute.startsWith('Phone Number'));
-    const clientEmail = whoisData.find((item) => item.attribute.startsWith('Email Address'));
-    const clientAddress = whoisData.find((item) => item.attribute.startsWith('Street Address'));
+    const orgName = findFieldByAttr(whoisData, 'Organization Name');
+    const clientName = findFieldByAttr(whoisData, 'Name');
+    const clientPhoneNumber = findFieldByAttr(whoisData, 'Phone Number');
+    const clientEmail = findFieldByAttr(whoisData, 'Email Address');
+    const clientAddress = findFieldByAttr(whoisData, 'Street Address');
 
     if (!orgName) {
       return reject(new Error('Whois is not available'));
     }
+
     const parsedData = {
       orgName: orgName.value,
       clientName: clientName.value,
