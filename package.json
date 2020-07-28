@@ -15,6 +15,7 @@
     "eslint-plugin-import": "^2.20.2"
   },
   "dependencies": {
+    "axios": "^0.19.2",
     "cheerio": "^1.0.0-rc.3",
     "dotenv": "^8.2.0",
     "lodash.xorby": "^4.7.0",
@@ -24,6 +25,7 @@
     "request": "^2.88.2",
     "request-promise": "^4.2.5",
     "telegraf": "^3.37.0",
+    "tunnel": "0.0.6",
     "whois": "^2.12.1"
   }
 }

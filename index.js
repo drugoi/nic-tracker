@@ -3,17 +3,14 @@
 
 require('dotenv').config();
 
-const rp = require('request-promise');
 const $ = require('cheerio');
 const cron = require('node-cron');
 
-
+const request = require('./request');
 const db = require('./db');
 const bot = require('./bot');
 const whoisAndParse = require('./whois');
 const { prepareDomainsMessage } = require('./helpers');
-
-const url = 'https://nic.kz/index.jsp';
 
 db.defaults({ domains: [] })
   .write();
@@ -42,9 +39,9 @@ async function parseDomains(domains) {
 
 const parseNic = () => {
   console.log('parse nic is running');
-  rp(url)
-    .then(async (html) => {
-      const domainsTable = $('#last-ten-table > tbody > tr:nth-child(2) > td > table > tbody', html);
+  request.get('')
+    .then(async (res) => {
+      const domainsTable = $('#last-ten-table > tbody > tr:nth-child(2) > td > table > tbody', res.data);
 
       const newDomains = [];
 
