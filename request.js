@@ -8,10 +8,10 @@ const httpsAgent = () => {
   const proxyDbUrl = settingsDb.get('proxy').value();
 
   if (proxyDbUrl) {
-    const proxyUrl = new URL(settingsDb.get('proxy'));
+    const proxyUrl = new URL(proxyDbUrl);
     return tunnel.httpsOverHttp({
       proxy: {
-        host: proxyUrl.host,
+        host: proxyUrl.hostname,
         port: proxyUrl.port,
       },
     });
@@ -21,7 +21,7 @@ const httpsAgent = () => {
 
 const instance = axios.create({
   baseURL: 'https://nic.kz/',
-  timeout: 3000,
+  timeout: 1000,
   httpsAgent: httpsAgent(),
   proxy: false,
 });

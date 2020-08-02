@@ -90,4 +90,4 @@ const parseNic = () => {
     });
 };
 
-cron.schedule('*/4 * * * *', () => parseNic()).start();
+cron.schedule('*/3 * * * *', () => parseNic()).start();
