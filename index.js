@@ -7,13 +7,18 @@ const $ = require('cheerio');
 const cron = require('node-cron');
 
 const request = require('./request');
-const db = require('./db');
+const { db, settingsDb } = require('./db');
 const bot = require('./bot');
 const whoisAndParse = require('./whois');
 const { prepareDomainsMessage } = require('./helpers');
 
+// setup DB defaults
 db.defaults({ domains: [] })
   .write();
+
+settingsDb.defaults({
+  proxy: '',
+}).write();
 
 async function parseDomains(domains) {
   const domainsData = [];
@@ -85,4 +90,4 @@ const parseNic = () => {
     });
 };
 
-cron.schedule('*/2 * * * *', () => parseNic()).start();
+cron.schedule('*/4 * * * *', () => parseNic()).start();
