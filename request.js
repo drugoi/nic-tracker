@@ -1,7 +1,6 @@
 const axios = require('axios');
 const tunnel = require('tunnel');
 
-
 const { settingsDb } = require('./db');
 
 const httpsAgent = () => {
@@ -21,7 +20,7 @@ const httpsAgent = () => {
 
 const instance = axios.create({
   baseURL: 'https://nic.kz/',
-  timeout: 1000,
+  timeout: 2500,
   httpsAgent: httpsAgent(),
   proxy: false,
 });

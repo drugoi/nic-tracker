@@ -1,6 +1,7 @@
 const Telegraf = require('telegraf');
 const { settingsDb } = require('./db');
-
+const { parseNic } = require('./parse');
+const whoisAndParse = require('./whois');
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
@@ -15,35 +16,24 @@ bot.command('/proxy', async ({ message, reply }) => {
     const proxyUrl = message.text.replace('/proxy ', '');
     await settingsDb.set('proxy', proxyUrl).write();
     await reply('URL прокси успешно изменён');
+
+    parseNic();
   } else {
     await reply('Нужно указать URL для прокси');
   }
 });
 
-// bot.hears('/domains', ({replyWithMarkdown}))
-
-// bot.on('text', ({ message, replyWithMarkdown }) => {
-//   const reply = `${transformString(message.text)}`;
-//   replyWithMarkdown(reply);
-// });
-
-// bot.on('inline_query', ({ inlineQuery, answerInlineQuery }) => {
-//   if (inlineQuery.query && inlineQuery.query.length) {
-//     const answer = transformString(inlineQuery.query);
-//     answerInlineQuery([
-//       {
-//         id: '1',
-//         type: 'article',
-//         title: answer,
-//         input_message_content: {
-//           message_text: `${answer}`,
-//           parse_mode: 'Markdown',
-//           disable_web_page_preview: true,
-//         },
-//       },
-//     ]);
-//   }
-// });
+bot.command('/whois', async ({ message, reply }) => {
+  console.log(message);
+  const domain = message.text.replace('/whois', '');
+  if (domain) {
+    whoisAndParse(domain, true).then(async (res) => {
+      await reply(res);
+    });
+  } else {
+    await reply('Нужно указать домен в формате domain.com');
+  }
+});
 
 bot.startPolling();
 

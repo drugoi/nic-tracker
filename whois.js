@@ -6,12 +6,16 @@ const domain = process.argv.slice(2)[0];
 
 const findFieldByAttr = (data, field) => data.find((item) => item.attribute.startsWith(field));
 
-const whoisAndParse = (domainToParse) => new Promise((resolve, reject) => {
+const whoisAndParse = (domainToParse, returnFull = false) => new Promise((resolve, reject) => {
   whois.lookup(domainToParse, (err, data) => {
     if (!data) {
       return reject(new Error('Whois is not available'));
     }
     const whoisData = parser.parseWhoIsData(data);
+
+    if (returnFull) {
+      return resolve(data);
+    }
 
     // TODO: cleanup this mess
     const orgName = findFieldByAttr(whoisData, 'Organization Name');

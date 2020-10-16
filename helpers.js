@@ -1,5 +1,5 @@
 const prepareDomainsMessage = (domains) => {
-  let message = '*Появились новые домены:*\n\n';
+  let message = '*Новый домен:*\n\n';
 
   domains.forEach(({
     domain, orgName, clientName, clientEmail, clientAddress,

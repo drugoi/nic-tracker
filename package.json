@@ -10,12 +10,12 @@
   "author": "Nikita Bayev <nikita@bayev.kz> (http://bayev.kz/)",
   "license": "MIT",
   "devDependencies": {
-    "eslint": "^6.8.0",
-    "eslint-config-airbnb-base": "^14.1.0",
-    "eslint-plugin-import": "^2.20.2"
+    "eslint": "^7.11.0",
+    "eslint-config-airbnb-base": "^14.2.0",
+    "eslint-plugin-import": "^2.22.1"
   },
   "dependencies": {
-    "axios": "^0.19.2",
+    "axios": "^0.20.0",
     "cheerio": "^1.0.0-rc.3",
     "dotenv": "^8.2.0",
     "lodash.xorby": "^4.7.0",
@@ -23,9 +23,8 @@
     "node-cron": "^2.0.3",
     "parse-whois": "^1.0.0",
     "request": "^2.88.2",
-    "request-promise": "^4.2.5",
-    "telegraf": "^3.37.0",
+    "telegraf": "^3.38.0",
     "tunnel": "0.0.6",
-    "whois": "^2.12.1"
+    "whois": "^2.13.1"
   }
 }
