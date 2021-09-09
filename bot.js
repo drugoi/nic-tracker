@@ -1,9 +1,13 @@
 const Telegraf = require('telegraf');
 const { settingsDb } = require('./db');
-const { parseNic } = require('./parse');
 const whoisAndParse = require('./whois');
+const { parseNic } = require('./parse');
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
+
+bot.catch((err, ctx) => {
+  console.error(`Ooops, encountered an error for ${ctx.updateType}`, err);
+});
 
 bot.command('/start', (ctx) => {
   ctx.reply(
@@ -24,7 +28,6 @@ bot.command('/proxy', async ({ message, reply }) => {
 });
 
 bot.command('/whois', async ({ message, reply }) => {
-  console.log(message);
   const domain = message.text.replace('/whois', '');
   if (domain) {
     whoisAndParse(domain, true).then(async (res) => {

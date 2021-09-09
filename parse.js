@@ -36,9 +36,13 @@ async function parseDomains(domains) {
 
 const parseNic = () => {
   console.log('parse nic is running');
-  request.get('')
+  request
+    .get('')
     .then(async (res) => {
-      const domainsTable = $('#last-ten-table > tbody > tr:nth-child(2) > td > table > tbody', res.data);
+      const domainsTable = $(
+        '#last-ten-table > tbody > tr:nth-child(2) > td > table > tbody',
+        res.data,
+      );
 
       const newDomains = [];
 
@@ -56,11 +60,13 @@ const parseNic = () => {
 
       const existingDomains = db.get('domains').value();
 
-      const transaction = db.get('domains')
-        .batchUnique('domain', newDomains);
+      const transaction = db.get('domains').batchUnique('domain', newDomains);
 
-      const differentDomains = newDomains
-        .filter(({ domain: newDomain }) => !existingDomains.some(({ domain: existDomain }) => existDomain === newDomain));
+      const differentDomains = newDomains.filter(
+        ({ domain: newDomain }) => !existingDomains.some(
+          ({ domain: existDomain }) => existDomain === newDomain,
+        ),
+      );
 
       if (differentDomains.length) {
         transaction.write();
@@ -76,7 +82,7 @@ const parseNic = () => {
       }
     })
     .catch((err) => {
-      console.error('parseNic -> err', err);
+      console.error('parseNic -> err', err.message);
 
       const message = (err && err.message) || err;
       bot.telegram.sendMessage(process.env.TG_OWNER_ID, message, {
