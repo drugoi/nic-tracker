@@ -27,6 +27,13 @@ bot.command('/proxy', async ({ message, reply }) => {
   }
 });
 
+bot.command('/disableproxy', async ({ reply }) => {
+  await settingsDb.set('proxy', '').write();
+  await reply('URL прокси успешно изменён');
+
+  parseNic();
+});
+
 bot.command('/whois', async ({ message, reply }) => {
   const domain = message.text.replace('/whois', '');
   if (domain) {
