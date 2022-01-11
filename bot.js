@@ -29,7 +29,7 @@ bot.command('/proxy', async ({ message, reply }) => {
 
 bot.command('/disableproxy', async ({ reply }) => {
   await settingsDb.set('proxy', '').write();
-  await reply('URL прокси успешно изменён');
+  await reply('Прокси успешно отключена');
 
   parseNic();
 });

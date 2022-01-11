@@ -20,7 +20,7 @@ const httpsAgent = () => {
 
 const instance = axios.create({
   baseURL: 'https://nic.kz/',
-  timeout: 3000,
+  timeout: 15000,
   httpsAgent: httpsAgent(),
   proxy: false,
 });
