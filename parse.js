@@ -1,16 +1,12 @@
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
 
-const $ = require('cheerio');
+const cheerio = require('cheerio');
 
 const { db } = require('./db');
-
 const request = require('./request');
-
-const bot = require('./bot');
-
 const whoisAndParse = require('./whois');
-
+const { bot } = require('./bot-setup');
 const { prepareDomainsMessage } = require('./helpers');
 
 async function parseDomains(domains) {
@@ -35,13 +31,14 @@ async function parseDomains(domains) {
 }
 
 const parseNic = () => {
-  console.log('parse nic is running');
+  console.info('🚀 ~ parseNic ~ started');
+
   request
     .get('')
     .then(async (res) => {
+      const $ = cheerio.load(res.data);
       const domainsTable = $(
         '#last-ten-table > tbody > tr:nth-child(2) > td > table > tbody',
-        res.data,
       );
 
       const newDomains = [];
@@ -75,6 +72,7 @@ const parseNic = () => {
 
         extendedDomains.forEach(async (domain) => {
           const message = await prepareDomainsMessage([domain]);
+
           bot.telegram.sendMessage(process.env.TG_CHANNEL_ID, message, {
             parse_mode: 'markdown',
           });
@@ -85,6 +83,7 @@ const parseNic = () => {
       console.error('parseNic -> err', err.message);
 
       const message = (err && err.message) || err;
+
       bot.telegram.sendMessage(process.env.TG_OWNER_ID, message, {
         parse_mode: 'markdown',
       });

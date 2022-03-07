@@ -1,9 +1,7 @@
-const Telegraf = require('telegraf');
+const { bot } = require('./bot-setup');
 const { settingsDb } = require('./db');
 const whoisAndParse = require('./whois');
 const { parseNic } = require('./parse');
-
-const bot = new Telegraf(process.env.BOT_TOKEN);
 
 bot.catch((err, ctx) => {
   console.error(`Ooops, encountered an error for ${ctx.updateType}`, err);

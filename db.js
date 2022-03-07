@@ -9,7 +9,8 @@ const settingsDb = low(settingsAdapter);
 
 db._.mixin({
   batchUnique: (array, key, items) => {
-    const cleanItems = items.filter((newItem) => array.findIndex((el) => el[key] === newItem[key]) === -1);
+    const cleanItems = items
+      .filter((newItem) => array.findIndex((el) => el[key] === newItem[key]) === -1);
     return array.push(...cleanItems);
   },
 });
