@@ -38,7 +38,7 @@ const parseNic = async () => {
   console.info('🚀 ~ [PARSER] ready 🟢');
 
   const requestInstance = await request.getInstance();
-  const dbInstance = await dbInstance;
+  const dbInstance = await db.getDb();
 
   requestInstance
     .get('')
