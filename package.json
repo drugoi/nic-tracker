@@ -1,23 +1,23 @@
 {
   "name": "nic-tracker",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "",
   "main": "index.js",
   "keywords": [],
   "author": "Nikita Bayev <nikita@bayev.kz> (http://bayev.kz/)",
   "license": "MIT",
   "devDependencies": {
-    "eslint": "^8.10.0",
+    "eslint": "^8.18.0",
     "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-plugin-import": "^2.25.4"
+    "eslint-plugin-import": "^2.26.0"
   },
   "dependencies": {
-    "axios": "^0.26.0",
+    "axios": "^0.27.2",
     "cheerio": "^1.0.0-rc.3",
-    "dotenv": "^16.0.0",
+    "dotenv": "^16.0.1",
     "lodash.xorby": "^4.7.0",
-    "lowdb": "^1.0.0",
-    "node-cron": "^3.0.0",
+    "mongodb": "^4.7.0",
+    "node-cron": "^3.0.1",
     "parse-whois": "^1.0.0",
     "request": "^2.88.2",
     "telegraf": "^3.38.0",

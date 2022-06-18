@@ -1,10 +1,13 @@
 const { bot } = require('./bot-setup');
-const { settingsDb } = require('./db');
+const { updateSettings } = require('./db');
 const whoisAndParse = require('./whois');
 const { parseNic } = require('./parse');
+const {
+  instance,
+} = require('./request');
 
 bot.catch((err, ctx) => {
-  console.error(`Ooops, encountered an error for ${ctx.updateType}`, err);
+  console.error(`🚀 ~ bot.catch ~ err for ${ctx.updateType}`, err);
 });
 
 bot.command('/start', (ctx) => {
@@ -16,33 +19,30 @@ bot.command('/start', (ctx) => {
 bot.command('/proxy', async ({ message, reply }) => {
   if (message.entities.some((entity) => entity.type === 'url')) {
     const proxyUrl = message.text.replace('/proxy ', '');
-    await settingsDb.set('proxy', proxyUrl).write();
+    await updateSettings(proxyUrl);
     await reply('URL прокси успешно изменён');
 
-    parseNic();
+    parseNic(instance);
   } else {
     await reply('Нужно указать URL для прокси');
   }
 });
 
 bot.command('/disableproxy', async ({ reply }) => {
-  await settingsDb.set('proxy', '').write();
+  await updateSettings('');
   await reply('Прокси успешно отключена');
 
-  parseNic();
+  parseNic(instance);
 });
 
 bot.command('/whois', async ({ message, reply }) => {
   const domain = message.text.replace('/whois', '');
   if (domain) {
-    whoisAndParse(domain, true).then(async (res) => {
-      await reply(res);
-    });
+    const whoisData = await whoisAndParse(domain, true);
+    await reply(whoisData);
   } else {
     await reply('Нужно указать домен в формате domain.com');
   }
 });
-
-bot.startPolling();
 
 module.exports = bot;

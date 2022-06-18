@@ -1,25 +1,27 @@
 require('dotenv').config();
 
 const cron = require('node-cron');
-const Telegraf = require('telegraf');
 
-const bot = new Telegraf(process.env.BOT_TOKEN);
-
-const { db, settingsDb } = require('./db');
+const { setupDb } = require('./db');
 const { parseNic } = require('./parse');
+const bot = require('./bot');
+const {
+  initAxios,
+} = require('./request');
 
-// setup DB defaults
-db.defaults({ domains: [] })
-  .write();
+const init = async () => {
+  try {
+    const db = await setupDb();
+    await bot.startPolling();
+    console.log('🚀 ~ [BOT] ready 🟢');
+    const requestInstance = await initAxios(db);
 
-settingsDb.defaults({
-  proxy: '',
-}).write();
-
-parseNic();
-
-cron.schedule('*/5 * * * *', () => parseNic()).start();
-
-module.exports = {
-  bot,
+    parseNic(requestInstance, db);
+  } catch (error) {
+    console.error('🚀 ~ init ~ error', error);
+  }
 };
+
+init();
+
+// cron.schedule('*/5 * * * *', () => parseNic()).start();
