@@ -1,38 +1,43 @@
 const axios = require('axios');
 const tunnel = require('tunnel');
 
-const { settingsDb } = require('./db');
+let instance;
 
-const httpsAgent = () => {
-  const proxyDbUrl = settingsDb.get('proxy').value();
+const initAxios = async (db) => {
+  console.log('🚀 ~ [AXIOS] ready 🟢');
+  const { proxy: proxyDbUrl } = await db.collection('settings').findOne({});
 
-  if (proxyDbUrl) {
-    const proxyUrl = new URL(proxyDbUrl);
-    return tunnel.httpsOverHttp({
-      proxy: {
-        host: proxyUrl.hostname,
-        port: proxyUrl.port,
-      },
-    });
-  }
-  return false;
+  const httpsAgent = () => {
+    if (proxyDbUrl) {
+      const proxyUrl = new URL(proxyDbUrl);
+      return tunnel.httpsOverHttp({
+        proxy: {
+          host: proxyUrl.hostname,
+          port: proxyUrl.port,
+        },
+      });
+    }
+    return false;
+  };
+
+  instance = await axios.create({
+    baseURL: 'https://nic.kz/',
+    timeout: 15000,
+    httpsAgent,
+    proxy: false,
+  });
+
+  instance.interceptors.request.use(
+    (config) => {
+    // eslint-disable-next-line no-param-reassign
+      config.httpsAgent = httpsAgent(db);
+
+      return config;
+    },
+    (error) => Promise.reject(error),
+  );
+
+  return instance;
 };
 
-const instance = axios.create({
-  baseURL: 'https://nic.kz/',
-  timeout: 15000,
-  httpsAgent: httpsAgent(),
-  proxy: false,
-});
-
-instance.interceptors.request.use(
-  (config) => {
-    // eslint-disable-next-line no-param-reassign
-    config.httpsAgent = httpsAgent();
-
-    return config;
-  },
-  (error) => Promise.reject(error),
-);
-
-module.exports = instance;
+module.exports = { instance, initAxios };

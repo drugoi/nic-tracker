@@ -4,7 +4,11 @@ const parser = require('parse-whois');
 // For CLI
 const domain = process.argv.slice(2)[0];
 
-const findFieldByAttr = (data, field) => data.find((item) => item.attribute.startsWith(field));
+const findFieldByAttr = (data, field) => data.find((item) => item.attribute.startsWith(field)) || {
+  value: '',
+};
+
+const findFieldsByAttrs = (data, fields) => fields.map((field) => findFieldByAttr(data, field));
 
 const whoisAndParse = (domainToParse, returnFull = false) => new Promise((resolve, reject) => {
   whois.lookup(domainToParse, (err, data) => {
@@ -17,32 +21,37 @@ const whoisAndParse = (domainToParse, returnFull = false) => new Promise((resolv
       return resolve(data);
     }
 
-    // TODO: cleanup this mess
-    const orgName = findFieldByAttr(whoisData, 'Organization Name');
-    const clientName = findFieldByAttr(whoisData, 'Name');
-    const clientPhoneNumber = findFieldByAttr(whoisData, 'Phone Number');
-    const clientEmail = findFieldByAttr(whoisData, 'Email Address');
-    const clientAddress = findFieldByAttr(whoisData, 'Street Address');
-
-    if (!orgName) {
-      return reject(new Error('Whois is not available'));
-    }
+    const [
+      orgName,
+      clientName,
+      clientPhoneNumber,
+      clientEmail,
+      clientAddress,
+    ] = findFieldsByAttrs(whoisData, [
+      'Organization Name',
+      'Name',
+      'Phone Number',
+      'Email Address',
+      'Street Address']);
 
     const parsedData = {
-      orgName: orgName.value,
-      clientName: clientName.value,
-      clientPhoneNumber: clientPhoneNumber.value,
-      clientEmail: clientEmail.value,
-      clientAddress: clientAddress.value,
+      orgName: orgName.value || 'Не указано',
+      clientName: clientName.value || 'Не указано',
+      clientPhoneNumber: clientPhoneNumber.value || 'Не указан',
+      clientEmail: clientEmail.value || 'Не указан',
+      clientAddress: clientAddress.value || 'Не указан',
     };
 
-    return resolve(parsedData);
+    return resolve({
+      whoisData,
+      parsedData,
+    });
   });
 });
 
 if (domain) {
   whoisAndParse(domain).then((res) => {
-    console.log('whoisAndParse', res);
+    console.log('🚀 ~ whoisAndParse ~ res', res);
   });
 }
 

@@ -1,39 +1,41 @@
+/* eslint-disable no-underscore-dangle */
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
 
 const cheerio = require('cheerio');
 
-const { db } = require('./db');
-const request = require('./request');
+const { ObjectId } = require('mongodb');
 const whoisAndParse = require('./whois');
 const { bot } = require('./bot-setup');
-const { prepareDomainsMessage } = require('./helpers');
+const { prepareDomainMessage } = require('./helpers');
 
-async function parseDomains(domains) {
-  const domainsData = [];
+async function parseDomain(domain) {
+  let domainsData = {};
 
-  for (const item of domains) {
-    try {
-      const domainWhois = await whoisAndParse(item.domain);
+  try {
+    const {
+      whoisData,
+      parsedData,
+    } = await whoisAndParse(domain.domain);
 
-      domainsData.push({
-        ...item,
-        ...domainWhois,
-      });
-    } catch (error) {
-      domainsData.push({
-        ...item,
-      });
-    }
+    domainsData = {
+      ...domain,
+      whoisData,
+      whois: parsedData,
+    };
+  } catch (error) {
+    domainsData = {
+      ...domain,
+    };
   }
 
   return domainsData;
 }
 
-const parseNic = () => {
-  console.info('🚀 ~ parseNic ~ started');
+const parseNic = (requestInstance, db) => {
+  console.info('🚀 ~ [PARSER] ready 🟢');
 
-  request
+  requestInstance
     .get('')
     .then(async (res) => {
       const $ = cheerio.load(res.data);
@@ -55,34 +57,53 @@ const parseNic = () => {
         }
       });
 
-      const existingDomains = db.get('domains').value();
+      // insert new domains to db
+      const domainsCollection = await db.collection('domains');
 
-      const transaction = db.get('domains').batchUnique('domain', newDomains);
+      try {
+        const domainsToSend = [];
 
-      const differentDomains = newDomains.filter(
-        ({ domain: newDomain }) => !existingDomains.some(
-          ({ domain: existDomain }) => existDomain === newDomain,
-        ),
-      );
+        for (const domain of newDomains) {
+          const existedDomain = await domainsCollection.findOne({ domain: domain.domain });
 
-      if (differentDomains.length) {
-        transaction.write();
+          // if domain exists in db and registration date is not older than 10 days
+          // eslint-disable-next-line max-len
+          if (existedDomain && (Date.now() - new Date(existedDomain.date).getTime()) > 1000 * 60 * 60 * 24 * 10) {
+            console.log('🚀 ~ domain is older than 10 days', existedDomain);
+            const domainsData = await parseDomain(domain);
 
-        const extendedDomains = await parseDomains(differentDomains);
+            await domainsCollection.updateOne(
+              { _id: ObjectId(existedDomain._id) },
+              { $set: domainsData },
+            );
 
-        extendedDomains.forEach(async (domain) => {
-          const message = await prepareDomainsMessage([domain]);
+            existedDomain._id = new ObjectId();
+            await db.collection('oldDomains').insertOne(existedDomain);
+
+            domainsToSend.push(domainsData);
+          } else if (!existedDomain) {
+            const domainsData = await parseDomain(domain);
+            await domainsCollection.insertOne(domainsData);
+
+            domainsToSend.push(domainsData);
+          }
+        }
+
+        domainsToSend.forEach(async (domain) => {
+          console.log('🚀 ~ domainsToSend.forEach ~ domain', domain);
+          const message = await prepareDomainMessage(domain.whois);
 
           bot.telegram.sendMessage(process.env.TG_CHANNEL_ID, message, {
             parse_mode: 'markdown',
           });
         });
+      } catch (error) {
+        console.error('🚀 ~ [PARSER] ~ insert error', error);
       }
     })
     .catch((err) => {
-      console.error('parseNic -> err', err.message);
-
       const message = (err && err.message) || err;
+      console.log('🚀 ~ parseNic ~ err', message);
 
       bot.telegram.sendMessage(process.env.TG_OWNER_ID, message, {
         parse_mode: 'markdown',
