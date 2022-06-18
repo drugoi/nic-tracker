@@ -11,9 +11,7 @@ const { prepareDomainMessage } = require('./helpers');
 const {
   getInstance,
 } = require('./request');
-const {
-  getDb,
-} = require('./db');
+const db = require('./db');
 
 async function parseDomain(domain) {
   let domainsData = {};
@@ -41,7 +39,7 @@ async function parseDomain(domain) {
 const parseNic = () => {
   console.info('🚀 ~ [PARSER] ready 🟢');
 
-  getInstance
+  getInstance()
     .get('')
     .then(async (res) => {
       const $ = cheerio.load(res.data);
@@ -64,7 +62,7 @@ const parseNic = () => {
       });
 
       // insert new domains to db
-      const domainsCollection = await getDb().collection('domains');
+      const domainsCollection = await db.getDb().collection('domains');
 
       try {
         const domainsToSend = [];
@@ -84,7 +82,7 @@ const parseNic = () => {
             );
 
             existedDomain._id = new ObjectId();
-            await getDb().collection('oldDomains').insertOne(existedDomain);
+            await db.getDb().collection('oldDomains').insertOne(existedDomain);
 
             domainsToSend.push(domainsData);
           } else if (!existedDomain) {

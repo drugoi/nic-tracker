@@ -71,7 +71,6 @@ const setupDb = async () => {
   await setupDomainIndexes();
   await updateSettings();
 
-  console.log('🚀 ~ setupDb ~ db', db);
   return db;
 };
 
@@ -79,7 +78,6 @@ const getDb = async () => {
   if (!db) {
     await setupDb();
   }
-  console.log('🚀 ~ getDb ~ db', db);
 
   return db;
 };

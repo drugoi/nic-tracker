@@ -1,15 +1,13 @@
 const axios = require('axios');
 const tunnel = require('tunnel');
 
-const {
-  getDb,
-} = require('./db');
+const db = require('./db');
 
 let instance;
 
 const initAxios = async () => {
   console.log('🚀 ~ [AXIOS] ready 🟢');
-  const { proxy: proxyDbUrl } = await getDb().collection('settings').findOne({});
+  const { proxy: proxyDbUrl } = await db.getDb().collection('settings').findOne({});
 
   const httpsAgent = () => {
     if (proxyDbUrl) {
