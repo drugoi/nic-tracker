@@ -1,11 +1,15 @@
 const axios = require('axios');
 const tunnel = require('tunnel');
 
+const {
+  getDb,
+} = require('./db');
+
 let instance;
 
-const initAxios = async (db) => {
+const initAxios = async () => {
   console.log('🚀 ~ [AXIOS] ready 🟢');
-  const { proxy: proxyDbUrl } = await db.collection('settings').findOne({});
+  const { proxy: proxyDbUrl } = await getDb().collection('settings').findOne({});
 
   const httpsAgent = () => {
     if (proxyDbUrl) {
@@ -30,7 +34,7 @@ const initAxios = async (db) => {
   instance.interceptors.request.use(
     (config) => {
     // eslint-disable-next-line no-param-reassign
-      config.httpsAgent = httpsAgent(db);
+      config.httpsAgent = httpsAgent();
 
       return config;
     },
@@ -40,4 +44,12 @@ const initAxios = async (db) => {
   return instance;
 };
 
-module.exports = { instance, initAxios };
+const getInstance = async () => {
+  if (!instance) {
+    await initAxios();
+  }
+
+  return instance;
+};
+
+module.exports = { getInstance, initAxios };

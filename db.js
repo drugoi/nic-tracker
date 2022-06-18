@@ -74,8 +74,16 @@ const setupDb = async () => {
   return db;
 };
 
+const getDb = async () => {
+  if (!db) {
+    await setupDb();
+  }
+
+  return db;
+};
+
 module.exports = {
-  db,
+  getDb,
   setupDb,
   updateSettings,
 };
