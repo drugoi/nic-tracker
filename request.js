@@ -7,7 +7,9 @@ let instance;
 
 const initAxios = async () => {
   console.log('🚀 ~ [AXIOS] ready 🟢');
-  const { proxy: proxyDbUrl } = await db.getDb().collection('settings').findOne({});
+  const dbInstance = await db.getDb();
+
+  const { proxy: proxyDbUrl } = await dbInstance.collection('settings').findOne({});
 
   const httpsAgent = () => {
     if (proxyDbUrl) {

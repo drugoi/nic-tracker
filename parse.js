@@ -8,9 +8,7 @@ const { ObjectId } = require('mongodb');
 const whoisAndParse = require('./whois');
 const { bot } = require('./bot-setup');
 const { prepareDomainMessage } = require('./helpers');
-const {
-  getInstance,
-} = require('./request');
+const request = require('./request');
 const db = require('./db');
 
 async function parseDomain(domain) {
@@ -36,10 +34,13 @@ async function parseDomain(domain) {
   return domainsData;
 }
 
-const parseNic = () => {
+const parseNic = async () => {
   console.info('🚀 ~ [PARSER] ready 🟢');
 
-  getInstance()
+  const requestInstance = await request.getInstance();
+  const dbInstance = await dbInstance;
+
+  requestInstance
     .get('')
     .then(async (res) => {
       const $ = cheerio.load(res.data);
@@ -62,7 +63,7 @@ const parseNic = () => {
       });
 
       // insert new domains to db
-      const domainsCollection = await db.getDb().collection('domains');
+      const domainsCollection = await dbInstance.collection('domains');
 
       try {
         const domainsToSend = [];
@@ -82,7 +83,7 @@ const parseNic = () => {
             );
 
             existedDomain._id = new ObjectId();
-            await db.getDb().collection('oldDomains').insertOne(existedDomain);
+            await dbInstance.collection('oldDomains').insertOne(existedDomain);
 
             domainsToSend.push(domainsData);
           } else if (!existedDomain) {
