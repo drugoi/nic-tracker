@@ -90,7 +90,6 @@ const parseNic = (requestInstance, db) => {
         }
 
         domainsToSend.forEach(async (domain) => {
-          console.log('🚀 ~ domainsToSend.forEach ~ domain', domain);
           const message = await prepareDomainMessage({
             ...domain.whois,
             domain: domain.domain,

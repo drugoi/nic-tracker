@@ -3,7 +3,7 @@ require('dotenv').config();
 const cron = require('node-cron');
 
 const { setupDb } = require('./db');
-const { parseNic } = require('./parse');
+const { parseNic, db } = require('./parse');
 const bot = require('./bot');
 const {
   initAxios,
@@ -11,12 +11,12 @@ const {
 
 const init = async () => {
   try {
-    const db = await setupDb();
+    const localDb = await setupDb();
     await bot.startPolling();
     console.log('🚀 ~ [BOT] ready 🟢');
-    const requestInstance = await initAxios(db);
+    const requestInstance = await initAxios(localDb);
 
-    parseNic(requestInstance, db);
+    parseNic(requestInstance, localDb);
   } catch (error) {
     console.error('🚀 ~ init ~ error', error);
   }
@@ -24,4 +24,4 @@ const init = async () => {
 
 init();
 
-// cron.schedule('*/5 * * * *', () => parseNic()).start();
+cron.schedule('*/5 * * * *', () => parseNic(db)).start();
