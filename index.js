@@ -7,6 +7,7 @@ const { parseNic, db } = require('./parse');
 const bot = require('./bot');
 const {
   initAxios,
+  instance,
 } = require('./request');
 
 const init = async () => {
@@ -24,4 +25,4 @@ const init = async () => {
 
 init();
 
-cron.schedule('*/5 * * * *', () => parseNic(db)).start();
+cron.schedule('*/5 * * * *', () => parseNic(instance, db)).start();
