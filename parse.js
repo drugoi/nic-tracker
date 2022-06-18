@@ -91,7 +91,10 @@ const parseNic = (requestInstance, db) => {
 
         domainsToSend.forEach(async (domain) => {
           console.log('🚀 ~ domainsToSend.forEach ~ domain', domain);
-          const message = await prepareDomainMessage(domain.whois);
+          const message = await prepareDomainMessage({
+            ...domain.whois,
+            domain: domain.domain,
+          });
 
           bot.telegram.sendMessage(process.env.TG_CHANNEL_ID, message, {
             parse_mode: 'markdown',

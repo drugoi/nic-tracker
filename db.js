@@ -7,7 +7,7 @@ const {
   DB_PASSWORD,
 } = process.env;
 
-const connectionUrl = `mongodb://${DB_USER ? `${DB_USER}:${DB_PASSWORD}@` : ''}${DB_HOST}/${DB_NAME}?retryWrites=true&w=majority`;
+const connectionUrl = `mongodb://${DB_USER ? `${DB_USER}:${DB_PASSWORD}@` : ''}${DB_HOST}/${DB_NAME}?retryWrites=true&w=majority&authSource=admin`;
 console.log('🚀 ~ connectionUrl', connectionUrl);
 
 const client = new MongoClient(connectionUrl);
