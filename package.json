@@ -6,22 +6,26 @@
   "keywords": [],
   "author": "Nikita Bayev <nikita@bayev.kz> (http://bayev.kz/)",
   "license": "MIT",
+  "scripts": {
+    "release": "standard-version"
+  },
   "devDependencies": {
-    "eslint": "^8.18.0",
+    "eslint": "^8.31.0",
     "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-plugin-import": "^2.26.0"
+    "eslint-plugin-import": "^2.26.0",
+    "standard-version": "^9.5.0"
   },
   "dependencies": {
-    "axios": "^0.27.2",
+    "axios": "^1.2.2",
     "cheerio": "^1.0.0-rc.3",
-    "dotenv": "^16.0.1",
+    "dotenv": "^16.0.3",
     "lodash.xorby": "^4.7.0",
-    "mongodb": "^4.7.0",
-    "node-cron": "^3.0.1",
+    "mongodb": "^4.13.0",
+    "node-cron": "^3.0.2",
     "parse-whois": "^1.0.0",
     "request": "^2.88.2",
     "telegraf": "^3.38.0",
     "tunnel": "0.0.6",
-    "whois": "^2.13.9"
+    "whois": "^2.14.0"
   }
 }
