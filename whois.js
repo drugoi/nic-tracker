@@ -12,16 +12,26 @@ const findFieldByAttr = (data, field) =>
 const findFieldsByAttrs = (data, fields) =>
   fields.map((field) => findFieldByAttr(data, field));
 
-const whoisAndParse = (domainToParse, returnFull = false, proxyParams) =>
+const whoisAndParse = (
+  domainToParse,
+  returnFull = false,
+  proxyParams = {
+    host: undefined,
+    port: undefined,
+  }
+) =>
   new Promise((resolve, reject) => {
     whois.lookup(
       domainToParse,
       {
-        proxy: {
-          host: proxyParams.host,
-          port: proxyParams.port,
-          type: 5,
-        },
+        server: 'whois.nic.kz',
+        proxy: proxyParams.host
+          ? {
+              host: proxyParams.host,
+              port: proxyParams.port,
+              type: 5,
+            }
+          : undefined,
       },
       (err, data) => {
         if (err) {
