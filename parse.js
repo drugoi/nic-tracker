@@ -40,7 +40,9 @@ const parseNic = async () => {
 
   const requestInstance = await request.getInstance();
   const dbInstance = await db.getDb();
-  const { proxy: proxyUrl } = await db.collection('settings').findOne({});
+  const { proxy: proxyUrl } = await dbInstance
+    .collection('settings')
+    .findOne({});
 
   let proxyParams = {};
   if (proxyUrl) {
