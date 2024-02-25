@@ -10,18 +10,18 @@
     "release": "standard-version"
   },
   "devDependencies": {
-    "eslint": "^8.43.0",
+    "eslint": "^8.57.0",
     "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-plugin-import": "^2.27.5",
+    "eslint-plugin-import": "^2.29.1",
     "standard-version": "^9.5.0"
   },
   "dependencies": {
-    "axios": "^1.4.0",
+    "axios": "^1.6.7",
     "cheerio": "^1.0.0-rc.3",
-    "dotenv": "^16.3.1",
+    "dotenv": "^16.4.5",
     "lodash.xorby": "^4.7.0",
     "mongodb": "^4.13.0",
-    "node-cron": "^3.0.2",
+    "node-cron": "^3.0.3",
     "parse-whois": "^1.0.0",
     "request": "^2.88.2",
     "telegraf": "^3.38.0",

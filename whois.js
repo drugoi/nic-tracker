@@ -12,6 +12,9 @@ const findFieldsByAttrs = (data, fields) => fields.map((field) => findFieldByAtt
 
 const whoisAndParse = (domainToParse, returnFull = false) => new Promise((resolve, reject) => {
   whois.lookup(domainToParse, (err, data) => {
+    if (err) {
+      console.info('🚀 ~ whois.lookup ~ err:', err);
+    }
     if (!data) {
       return reject(new Error('Whois is not available'));
     }
@@ -52,6 +55,8 @@ const whoisAndParse = (domainToParse, returnFull = false) => new Promise((resolv
 if (domain) {
   whoisAndParse(domain).then((res) => {
     console.log('🚀 ~ whoisAndParse ~ res', res);
+  }).catch((err) => {
+    console.error('🚀 ~ whoisAndParse ~ err', err);
   });
 }
 
