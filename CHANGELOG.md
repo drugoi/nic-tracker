@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.1](https://github.com/drugoi/nic-tracker/compare/v0.1.0...v0.1.1) (2024-02-25)
+
+
+### Bug Fixes
+
+* add whois error catch ([4420ee9](https://github.com/drugoi/nic-tracker/commit/4420ee98501f4a78f0153a0273d60c79b39cbf30))
+
 ## 0.1.0 (2023-01-09)
 
 
