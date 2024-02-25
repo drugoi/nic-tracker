@@ -11,14 +11,15 @@ const { prepareDomainMessage } = require('./helpers');
 const request = require('./request');
 const db = require('./db');
 
-async function parseDomain(domain) {
+async function parseDomain(domain, proxyUrl) {
   let domainsData = {};
 
   try {
-    const {
-      whoisData,
-      parsedData,
-    } = await whoisAndParse(domain.domain);
+    const { whoisData, parsedData } = await whoisAndParse(
+      domain.domain,
+      false,
+      proxyUrl
+    );
 
     domainsData = {
       ...domain,
@@ -39,13 +40,23 @@ const parseNic = async () => {
 
   const requestInstance = await request.getInstance();
   const dbInstance = await db.getDb();
+  const { proxy: proxyUrl } = await db.collection('settings').findOne({});
+
+  let proxyParams = {};
+  if (proxyUrl) {
+    const proxy = new URL(proxyUrl);
+    proxyParams = {
+      host: proxy.hostname,
+      port: proxy.port,
+    };
+  }
 
   requestInstance
     .get('')
     .then(async (res) => {
       const $ = cheerio.load(res.data);
       const domainsTable = $(
-        '#last-ten-table > tbody > tr:nth-child(2) > td > table > tbody',
+        '#last-ten-table > tbody > tr:nth-child(2) > td > table > tbody'
       );
 
       const newDomains = [];
@@ -69,17 +80,23 @@ const parseNic = async () => {
         const domainsToSend = [];
 
         for (const domain of newDomains) {
-          const existedDomain = await domainsCollection.findOne({ domain: domain.domain });
+          const existedDomain = await domainsCollection.findOne({
+            domain: domain.domain,
+          });
 
           // if domain exists in db and registration date is not older than 10 days
           // eslint-disable-next-line max-len
-          if (existedDomain && (Date.now() - new Date(existedDomain.date).getTime()) > 1000 * 60 * 60 * 24 * 10) {
+          if (
+            existedDomain &&
+            Date.now() - new Date(existedDomain.date).getTime() >
+              1000 * 60 * 60 * 24 * 10
+          ) {
             console.log('🚀 ~ domain is older than 10 days', existedDomain);
-            const domainsData = await parseDomain(domain);
+            const domainsData = await parseDomain(domain, proxyParams);
 
             await domainsCollection.updateOne(
               { _id: ObjectId(existedDomain._id) },
-              { $set: domainsData },
+              { $set: domainsData }
             );
 
             existedDomain._id = new ObjectId();
@@ -87,7 +104,7 @@ const parseNic = async () => {
 
             domainsToSend.push(domainsData);
           } else if (!existedDomain) {
-            const domainsData = await parseDomain(domain);
+            const domainsData = await parseDomain(domain, proxyParams);
             await domainsCollection.insertOne(domainsData);
 
             domainsToSend.push(domainsData);

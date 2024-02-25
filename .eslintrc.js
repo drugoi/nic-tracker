@@ -1,17 +1,18 @@
 module.exports = {
   env: {
-    browser: true,
     commonjs: true,
-    es2021: true,
+    es6: true,
     node: true,
   },
-  extends: [
-    'airbnb-base',
-  ],
+  extends: 'airbnb-base',
+  globals: {
+    Atomics: 'readonly',
+    SharedArrayBuffer: 'readonly',
+  },
   parserOptions: {
-    ecmaVersion: 'latest',
+    ecmaVersion: 2018,
   },
   rules: {
-    'no-console': 'off',
+    'eol-last': ['error', 'always'],
   },
 };

@@ -1,5 +1,5 @@
 const { bot } = require('./bot-setup');
-const { updateSettings } = require('./db');
+const { updateSettings, getDb } = require('./db');
 const whoisAndParse = require('./whois');
 const { parseNic } = require('./parse');
 const {
@@ -35,13 +35,23 @@ bot.command('/disableproxy', async ({ reply }) => {
   parseNic(instance);
 });
 
+bot.command('/getproxy', async ({ reply }) => {
+  const db = await getDb();
+  const { proxy: proxyUrl } = await db.collection('settings').findOne({});
+  await reply(proxyUrl || 'Прокси не установлена');
+});
+
 bot.command('/whois', async ({ message, reply }) => {
-  const domain = message.text.replace('/whois', '');
-  if (domain) {
-    const whoisData = await whoisAndParse(domain, true);
-    await reply(whoisData);
-  } else {
-    await reply('Нужно указать домен в формате domain.com');
+  try {
+    const domain = message.text.replace('/whois', '');
+    if (domain) {
+      const whoisData = await whoisAndParse(domain, true);
+      await reply(whoisData);
+    } else {
+      await reply('Нужно указать домен в формате domain.com');
+    }
+  } catch (error) {
+    console.error('🚀 ~ bot.command ~ error:', error);
   }
 });
 
