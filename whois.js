@@ -24,14 +24,11 @@ const whoisAndParse = (
     whois.lookup(
       domainToParse,
       {
-        server: 'whois.nic.kz',
-        proxy: proxyParams.host
-          ? {
-              host: proxyParams.host,
-              port: proxyParams.port,
-              type: 5,
-            }
-          : undefined,
+        proxy: {
+          host: '74.119.144.60',
+          port: 4145,
+          type: 5,
+        },
       },
       (err, data) => {
         if (err) {
