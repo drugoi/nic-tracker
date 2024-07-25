@@ -17,6 +17,7 @@ const whoisAndParse = (
   whois.lookup(
     domainToParse,
     {
+      server: process.env.WHOIS_SERVER,
       proxy: process.env.WHOIS_PROXY_URL ? {
         host: process.env.WHOIS_PROXY_URL,
         port: process.env.WHOIS_PROXY_PORT,

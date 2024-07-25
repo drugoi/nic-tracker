@@ -18,7 +18,7 @@ async function parseDomain(domain, proxyUrl) {
     const { whoisData, parsedData } = await whoisAndParse(
       domain.domain,
       false,
-      proxyUrl
+      proxyUrl,
     );
 
     domainsData = {
@@ -58,7 +58,7 @@ const parseNic = async () => {
     .then(async (res) => {
       const $ = cheerio.load(res.data);
       const domainsTable = $(
-        '#last-ten-table > tbody > tr:nth-child(2) > td > table > tbody'
+        '#last-ten-table > tbody > tr:nth-child(2) > td > table > tbody',
       );
 
       const newDomains = [];
@@ -89,16 +89,16 @@ const parseNic = async () => {
           // if domain exists in db and registration date is not older than 10 days
           // eslint-disable-next-line max-len
           if (
-            existedDomain &&
-            Date.now() - new Date(existedDomain.date).getTime() >
-              1000 * 60 * 60 * 24 * 10
+            existedDomain
+            && Date.now() - new Date(existedDomain.date).getTime()
+              > 1000 * 60 * 60 * 24 * 10
           ) {
             console.log('🚀 ~ domain is older than 10 days', existedDomain);
             const domainsData = await parseDomain(domain, proxyParams);
 
             await domainsCollection.updateOne(
               { _id: ObjectId(existedDomain._id) },
-              { $set: domainsData }
+              { $set: domainsData },
             );
 
             existedDomain._id = new ObjectId();
