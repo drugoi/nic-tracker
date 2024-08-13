@@ -24,4 +24,5 @@ const init = async () => {
 
 init();
 
+// Run every 5 minutes
 cron.schedule('*/5 * * * *', () => parseNic()).start();
