@@ -1,22 +1,37 @@
 // Example of personal data: 000924050665 (12 symbols of IIN)
 
+const escapeMarkdown = (text) => {
+  if (!text) return '';
+  return text.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
+};
+
 const cleanFromPersonalData = (text) => text.replace(/\d{12}/g, '[REDACTED]');
 
 const prepareDomainMessage = ({
-  domain, orgName, clientName, clientEmail, clientAddress,
+  domain,
+  orgName,
+  clientName,
+  clientEmail,
+  clientAddress,
 }) => {
-  let message = '';
+  const escapedDomain = escapeMarkdown(domain);
+  const whoisUrl = `https://nic\\.kz/cgi\\-bin/whois?query=${escapedDomain}`;
 
   if (orgName) {
-    message += `*Домен:* ${domain} — [Whois](https://nic.kz/cgi-bin/whois?query=${domain})
-\n*Организация:* ${orgName}\n*Клиент:* ${cleanFromPersonalData(clientName)}\n*Email:* ${clientEmail}\n*Адрес*: ${clientAddress}\n\n`;
-  } else {
-    message += `*Домен:* ${domain} — [Whois](https://nic.kz/cgi-bin/whois?query=${domain})\n\n`;
+    return [
+      `*Домен:* ${escapedDomain} \\- [Whois](${whoisUrl})`,
+      `*Организация:* ${escapeMarkdown(orgName)}`,
+      `*Клиент:* ${escapeMarkdown(cleanFromPersonalData(clientName || ''))}`,
+      `*Email:* ${escapeMarkdown(clientEmail || '')}`,
+      `*Адрес*: ${escapeMarkdown(clientAddress || '')}`,
+      '',
+    ].join('\n');
   }
 
-  return message;
+  return `*Домен:* ${escapedDomain} \\- [Whois](${whoisUrl})\n\n`;
 };
 
 module.exports = {
   prepareDomainMessage,
+  cleanFromPersonalData,
 };

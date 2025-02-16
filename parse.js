@@ -131,7 +131,7 @@ const parseNic = async () => {
           });
 
           bot.telegram.sendMessage(process.env.TG_CHANNEL_ID, message, {
-            parse_mode: 'markdown',
+            parse_mode: 'MarkdownV2',
           });
         });
       } catch (error) {
