@@ -1,5 +1,3 @@
-// Example of personal data: 000924050665 (12 symbols of IIN)
-
 const escapeMarkdown = (text) => {
   if (!text) return '';
   return text.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
@@ -19,7 +17,7 @@ const prepareDomainMessage = ({
 
   if (orgName) {
     return [
-      `*Домен:* ${escapedDomain} \\- [Whois](${whoisUrl})`,
+      `*Домен:* ${escapedDomain} \\- [Whois](${whoisUrl})\n`,
       `*Организация:* ${escapeMarkdown(orgName)}`,
       `*Клиент:* ${escapeMarkdown(cleanFromPersonalData(clientName || ''))}`,
       `*Email:* ${escapeMarkdown(clientEmail || '')}`,
