@@ -8,6 +8,7 @@ const cleanFromPersonalData = (text) => text.replace(/\d{12}/g, '[REDACTED]');
 const prepareDomainMessage = ({
   domain,
   orgName,
+  registrar,
   clientName,
   clientEmail,
   clientAddress,
@@ -15,10 +16,11 @@ const prepareDomainMessage = ({
   const escapedDomain = escapeMarkdown(domain);
   const whoisUrl = `https://nic\\.kz/cgi\\-bin/whois?query=${escapedDomain}`;
 
-  if (orgName) {
+  if (orgName && orgName !== '[HIDDEN PERSONAL DATA]') {
     return [
       `*Домен:* ${escapedDomain} \\- [Whois](${whoisUrl})\n`,
       `*Организация:* ${escapeMarkdown(orgName)}`,
+      `*Регистратор:* ${escapeMarkdown(registrar || '')}`,
       `*Клиент:* ${escapeMarkdown(cleanFromPersonalData(clientName || ''))}`,
       `*Email:* ${escapeMarkdown(clientEmail || '')}`,
       `*Адрес*: ${escapeMarkdown(clientAddress || '')}`,
