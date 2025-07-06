@@ -10,6 +10,11 @@ const findFieldByAttr = (data, field) => data.find((item) => item.attribute.star
 
 const findFieldsByAttrs = (data, fields) => fields.map((field) => findFieldByAttr(data, field));
 
+const findRegistrar = (data) =>
+  data.find((item) => item.attribute.toLowerCase().includes('registrar')) || {
+    value: '',
+  };
+
 const whoisAndParse = (
   domainToParse,
   returnFull = false,
@@ -37,22 +42,20 @@ const whoisAndParse = (
         return resolve(data);
       }
 
-      const [
-        orgName,
-        clientName,
-        clientPhoneNumber,
-        clientEmail,
-        clientAddress,
-      ] = findFieldsByAttrs(whoisData, [
-        'Organization Name',
-        'Name',
-        'Phone Number',
-        'Email Address',
-        'Street Address',
-      ]);
+      const [orgName, clientName, clientPhoneNumber, clientEmail, clientAddress] =
+        findFieldsByAttrs(whoisData, [
+          'Organization Name',
+          'Name',
+          'Phone Number',
+          'Email Address',
+          'Street Address',
+        ]);
+
+      const registrar = findRegistrar(whoisData);
 
       const parsedData = {
         orgName: orgName.value || 'Не указано',
+        registrar: registrar.value || 'Не указан',
         clientName: clientName.value || 'Не указано',
         clientPhoneNumber: clientPhoneNumber.value || 'Не указан',
         clientEmail: clientEmail.value || 'Не указан',
