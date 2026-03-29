@@ -30,7 +30,7 @@
     "telegraf": "^4.16.3",
     "tunnel": "^0.0.6",
     "typescript": "^5.7.2",
-    "whois": "^2.14.2"
+    "whois": "2.14.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
