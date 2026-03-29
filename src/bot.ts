@@ -5,7 +5,7 @@ import { parseNic } from './parse.js';
 import { getInstance } from './request.js';
 
 bot.catch((err, ctx) => {
-  console.error(`🚀 ~ bot.catch ~ err for ${ctx.updateType}`, err);
+  console.error(`bot.catch ${ctx.updateType}`, err);
 });
 
 bot.command('start', (ctx) => {
@@ -58,7 +58,7 @@ bot.command('whois', async (ctx) => {
       await ctx.reply('Нужно указать домен в формате domain.com');
     }
   } catch (error) {
-    console.error('🚀 ~ bot.command ~ error:', error);
+    console.error('bot /whois error', error);
   }
 });
 

@@ -47,7 +47,7 @@ export function whoisAndParse(
       },
       (err, data) => {
         if (err) {
-          console.error('🚀 ~ whois.lookup ~ err:', err);
+          console.error('whois.lookup error', err);
         }
         if (!data) {
           reject(new Error('Whois is not available'));

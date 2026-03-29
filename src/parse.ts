@@ -36,8 +36,6 @@ async function parseDomain(
 }
 
 export async function parseNic(axiosInstance?: AxiosInstance): Promise<void> {
-  console.info('🚀 ~ [PARSER] ready 🟢');
-
   const requestInstance = axiosInstance ?? (await request.getInstance());
   const dbInstance = await db.getDb();
 
@@ -84,7 +82,6 @@ export async function parseNic(axiosInstance?: AxiosInstance): Promise<void> {
             && Date.now() - new Date(existedDomain.date).getTime()
               > 1000 * 60 * 60 * 24 * 10
           ) {
-            console.log('🚀 ~ domain is older than 10 days', existedDomain);
             const domainsData = await parseDomain(domain);
 
             if (domain.domain.includes('bereke')) {
@@ -124,12 +121,12 @@ export async function parseNic(axiosInstance?: AxiosInstance): Promise<void> {
           });
         }
       } catch (error) {
-        console.error('🚀 ~ [PARSER] ~ insert error', error);
+        console.error('[PARSER] insert error', error);
       }
     })
     .catch((err: unknown) => {
       const message = err instanceof Error ? err.message : String(err);
-      console.log('🚀 ~ parseNic ~ err', message);
+      console.error('[PARSER] fetch error', message);
 
       bot.telegram.sendMessage(env.tgOwnerId, message, {
         parse_mode: 'Markdown',

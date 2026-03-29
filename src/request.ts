@@ -6,7 +6,6 @@ import * as db from './db.js';
 let instance: AxiosInstance | undefined;
 
 export async function initAxios(): Promise<AxiosInstance> {
-  console.log('🚀 ~ [AXIOS] ready 🟢');
   const dbInstance = await db.getDb();
   const doc = await dbInstance.collection('settings').findOne({});
   const proxyDbUrl = doc && typeof doc.proxy === 'string' ? doc.proxy : undefined;

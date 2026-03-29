@@ -12,12 +12,11 @@ async function init(): Promise<void> {
   try {
     await setupDb();
     await launchBot();
-    console.log('🚀 ~ [BOT] ready 🟢');
     await initAxios();
 
     void parseNic();
   } catch (error) {
-    console.error('🚀 ~ init ~ error', error);
+    console.error('init error', error);
   }
 }
 
