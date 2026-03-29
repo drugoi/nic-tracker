@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# PM2 runs this with interpreter=/bin/bash so nvm applies before Node starts.
-# Plain `interpreter: node` uses whatever `node` PM2’s environment has (often 17.x).
 set -euo pipefail
 export NVM_CI=1
 
@@ -22,5 +20,4 @@ if [[ -f "$ROOT/.nvmrc" ]] && [[ -s "$NVM_DIR/nvm.sh" ]]; then
   nvm use --silent
 fi
 
-echo "[nic-bot] node $(node -v) at $(command -v node)" >&2
 exec node "$ROOT/dist/index.js"

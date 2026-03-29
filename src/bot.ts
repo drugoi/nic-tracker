@@ -1,5 +1,3 @@
-import type { Message } from 'telegraf/types';
-
 import { bot } from './bot-setup.js';
 import { updateSettings, getDb } from './db.js';
 import { whoisAndParse } from './whois.js';
@@ -16,16 +14,12 @@ bot.command('start', (ctx) => {
   );
 });
 
-function messageHasUrlEntity(message: Message.TextMessage): boolean {
-  return Boolean(message.entities?.some((entity) => entity.type === 'url'));
-}
-
 bot.command('proxy', async (ctx) => {
   const { message } = ctx;
   if (!message || !('text' in message)) {
     return;
   }
-  if (messageHasUrlEntity(message)) {
+  if (message.entities?.some((entity) => entity.type === 'url')) {
     const proxyUrl = message.text.replace('/proxy ', '');
     await updateSettings(proxyUrl);
     await ctx.reply('URL прокси успешно изменён');

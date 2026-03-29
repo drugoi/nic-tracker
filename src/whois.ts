@@ -1,6 +1,5 @@
 import { parseWhoIsData } from 'parse-whois';
 import type { WhoisField } from 'parse-whois';
-// whois@2.15+ ships `import` in index.js but no package "type":"module" — breaks at runtime; pin 2.14.2 in package.json.
 import whois from 'whois';
 
 import { env } from './env.js';
