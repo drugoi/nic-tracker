@@ -1,18 +1,26 @@
-const escapeMarkdown = (text) => {
-  if (!text) return '';
+import type { ParsedWhois } from './types.js';
+
+export type DomainMessageInput = { domain: string } & Partial<ParsedWhois>;
+
+export function escapeMarkdown(text: string | undefined): string {
+  if (!text) {
+    return '';
+  }
   return text.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
-};
+}
 
-const cleanFromPersonalData = (text) => text.replace(/\d{12}/g, '[REDACTED]');
+export function cleanFromPersonalData(text: string): string {
+  return text.replace(/\d{12}/g, '[REDACTED]');
+}
 
-const prepareDomainMessage = ({
+export function prepareDomainMessage({
   domain,
   orgName,
   registrar,
   clientName,
   clientEmail,
   clientAddress,
-}) => {
+}: DomainMessageInput): string {
   const escapedDomain = escapeMarkdown(domain);
   const whoisUrl = `https://nic\\.kz/cgi\\-bin/whois?query=${escapedDomain}`;
 
@@ -29,9 +37,4 @@ const prepareDomainMessage = ({
   }
 
   return `*Домен:* ${escapedDomain} \\- [Whois](${whoisUrl})\n\n`;
-};
-
-module.exports = {
-  prepareDomainMessage,
-  cleanFromPersonalData,
-};
+}

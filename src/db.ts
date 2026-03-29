@@ -1,30 +1,27 @@
-const { MongoClient } = require('mongodb');
+import { MongoClient, type Db } from 'mongodb';
 
-const {
-  DB_NAME,
-  DB_HOST,
-  DB_USER,
-  DB_PASSWORD,
-} = process.env;
+import { env } from './env.js';
 
-const connectionUrl = `mongodb://${DB_USER ? `${DB_USER}:${DB_PASSWORD}@` : ''}${DB_HOST}/${DB_NAME}?retryWrites=true&w=majority&authSource=admin`;
+const connectionUrl = `mongodb://${env.dbUser && env.dbPassword ? `${env.dbUser}:${env.dbPassword}@` : ''}${env.dbHost}/${env.dbName}?retryWrites=true&w=majority&authSource=admin`;
 
 const client = new MongoClient(connectionUrl);
 
-let db;
+let db: Db | undefined;
 
-const connect = async () => {
+async function connect(): Promise<void> {
   try {
     await client.connect();
     console.log('🚀 ~ [MongoDB] ready 🟢');
-
-    db = client.db(DB_NAME);
+    db = client.db(env.dbName);
   } catch (err) {
     console.error('💥 ~ [MongoDB] connection error', err);
   }
-};
+}
 
-const updateSettings = async (proxyUrl) => {
+export async function updateSettings(proxyUrl?: string): Promise<void> {
+  if (!db) {
+    return;
+  }
   try {
     const settings = await db.collection('settings').findOne({});
 
@@ -46,13 +43,15 @@ const updateSettings = async (proxyUrl) => {
   } catch (err) {
     console.error('💥 ~ [MongoDB] setup settings error', err);
   }
-};
+}
 
-const setupDomainIndexes = async () => {
+async function setupDomainIndexes(): Promise<void> {
+  if (!db) {
+    return;
+  }
   try {
     const indexes = await db.collection('domains').indexes();
-    if (!indexes.some((index) => index.name
-      === 'domain_1')) {
+    if (!indexes.some((index) => index.name === 'domain_1')) {
       console.log('🚀 ~ [INDEXES] creating 🟡');
       await db.collection('domains').createIndexes([
         { key: { domain: 1 }, unique: true },
@@ -64,26 +63,24 @@ const setupDomainIndexes = async () => {
   } catch (err) {
     console.error('💥 ~ [MongoDB] setup indexes error', err);
   }
-};
+}
 
-const setupDb = async () => {
+export async function setupDb(): Promise<Db> {
   await connect();
   await setupDomainIndexes();
   await updateSettings();
-
+  if (!db) {
+    throw new Error('MongoDB failed to initialize');
+  }
   return db;
-};
+}
 
-const getDb = async () => {
+export async function getDb(): Promise<Db> {
   if (!db) {
     await setupDb();
   }
-
+  if (!db) {
+    throw new Error('MongoDB failed to initialize');
+  }
   return db;
-};
-
-module.exports = {
-  getDb,
-  setupDb,
-  updateSettings,
-};
+}
