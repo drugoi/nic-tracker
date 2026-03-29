@@ -1,3 +1,4 @@
+import './polyfill-streams.js';
 import 'dotenv/config';
 
 import cron from 'node-cron';

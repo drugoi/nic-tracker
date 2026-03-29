@@ -6,6 +6,9 @@
   "keywords": [],
   "author": "Nikita Bayev <nikita@bayev.kz> (http://bayev.kz/)",
   "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
