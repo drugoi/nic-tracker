@@ -19,6 +19,7 @@
     "lint": "eslint src",
     "test": "vitest",
     "test:run": "vitest run",
+    "pm2:recreate": "bash scripts/pm2-recreate.sh",
     "release": "commit-and-tag-version"
   },
   "dependencies": {
