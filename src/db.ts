@@ -27,7 +27,7 @@ export async function updateSettings(proxyUrl?: string): Promise<void> {
     if (!settings) {
       console.log('[SETTINGS] creating default document');
       await db.collection('settings').insertOne({
-        proxy: '',
+        proxy: typeof proxyUrl === 'string' ? proxyUrl : '',
       });
       console.log('[SETTINGS] created');
     } else if (typeof proxyUrl === 'string') {
