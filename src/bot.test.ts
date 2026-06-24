@@ -28,6 +28,7 @@ const dbMocks = vi.hoisted(() => ({
 }));
 const requestMocks = vi.hoisted(() => ({
   getInstance: vi.fn(),
+  refreshAxios: vi.fn(),
 }));
 const parseMocks = vi.hoisted(() => ({
   parseNic: vi.fn(),
@@ -75,13 +76,14 @@ describe('bot commands', () => {
     dbMocks.getDb.mockReset();
     dbMocks.updateSettings.mockReset();
     requestMocks.getInstance.mockReset();
+    requestMocks.refreshAxios.mockReset();
     parseMocks.parseNic.mockReset();
     whoisMocks.whoisAndParse.mockReset();
   });
 
   it('updates proxy URL and starts parsing with a refreshed instance', async () => {
-    const axiosInstance = { name: 'axios-instance' };
-    requestMocks.getInstance.mockResolvedValue(axiosInstance);
+    const axiosInstance = { name: 'refreshed-axios-instance' };
+    requestMocks.refreshAxios.mockResolvedValue(axiosInstance);
     const handler = await loadHandler('proxy');
     const ctx: TestContext = {
       from: { id: 1001 },
@@ -96,13 +98,14 @@ describe('bot commands', () => {
 
     expect(dbMocks.updateSettings).toHaveBeenCalledWith('http://proxy.example:8080');
     expect(ctx.reply).toHaveBeenCalledWith('URL прокси успешно изменён');
-    expect(requestMocks.getInstance).toHaveBeenCalledOnce();
+    expect(requestMocks.refreshAxios).toHaveBeenCalledOnce();
+    expect(requestMocks.getInstance).not.toHaveBeenCalled();
     expect(parseMocks.parseNic).toHaveBeenCalledWith(axiosInstance);
   });
 
   it('disables proxy and starts parsing with a refreshed instance', async () => {
-    const axiosInstance = { name: 'axios-instance' };
-    requestMocks.getInstance.mockResolvedValue(axiosInstance);
+    const axiosInstance = { name: 'refreshed-axios-instance' };
+    requestMocks.refreshAxios.mockResolvedValue(axiosInstance);
     const handler = await loadHandler('disableproxy');
     const ctx: TestContext = {
       from: { id: 1001 },
@@ -113,7 +116,8 @@ describe('bot commands', () => {
 
     expect(dbMocks.updateSettings).toHaveBeenCalledWith('');
     expect(ctx.reply).toHaveBeenCalledWith('Прокси успешно отключена');
-    expect(requestMocks.getInstance).toHaveBeenCalledOnce();
+    expect(requestMocks.refreshAxios).toHaveBeenCalledOnce();
+    expect(requestMocks.getInstance).not.toHaveBeenCalled();
     expect(parseMocks.parseNic).toHaveBeenCalledWith(axiosInstance);
   });
 
@@ -151,6 +155,7 @@ describe('bot commands', () => {
     expect(dbMocks.updateSettings).not.toHaveBeenCalled();
     expect(dbMocks.getDb).not.toHaveBeenCalled();
     expect(requestMocks.getInstance).not.toHaveBeenCalled();
+    expect(requestMocks.refreshAxios).not.toHaveBeenCalled();
     expect(parseMocks.parseNic).not.toHaveBeenCalled();
   });
 
@@ -167,6 +172,7 @@ describe('bot commands', () => {
     expect(dbMocks.updateSettings).not.toHaveBeenCalled();
     expect(dbMocks.getDb).not.toHaveBeenCalled();
     expect(requestMocks.getInstance).not.toHaveBeenCalled();
+    expect(requestMocks.refreshAxios).not.toHaveBeenCalled();
     expect(parseMocks.parseNic).not.toHaveBeenCalled();
   });
 
@@ -183,6 +189,7 @@ describe('bot commands', () => {
     expect(dbMocks.updateSettings).not.toHaveBeenCalled();
     expect(dbMocks.getDb).not.toHaveBeenCalled();
     expect(requestMocks.getInstance).not.toHaveBeenCalled();
+    expect(requestMocks.refreshAxios).not.toHaveBeenCalled();
     expect(parseMocks.parseNic).not.toHaveBeenCalled();
   });
 

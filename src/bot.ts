@@ -2,7 +2,7 @@ import { bot } from './bot-setup.js';
 import { updateSettings, getDb } from './db.js';
 import { whoisAndParse } from './whois.js';
 import { parseNic } from './parse.js';
-import { getInstance } from './request.js';
+import { refreshAxios } from './request.js';
 import { env } from './env.js';
 
 interface OwnerContext {
@@ -42,7 +42,7 @@ bot.command('proxy', async (ctx) => {
     const proxyUrl = message.text.replace('/proxy ', '');
     await updateSettings(proxyUrl);
     await ctx.reply('URL прокси успешно изменён');
-    const instance = await getInstance();
+    const instance = await refreshAxios();
     parseNic(instance);
   } else {
     await ctx.reply('Нужно указать URL для прокси');
@@ -56,7 +56,7 @@ bot.command('disableproxy', async (ctx) => {
 
   await updateSettings('');
   await ctx.reply('Прокси успешно отключена');
-  const instance = await getInstance();
+  const instance = await refreshAxios();
   parseNic(instance);
 });
 
