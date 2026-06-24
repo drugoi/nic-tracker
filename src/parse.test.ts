@@ -93,6 +93,20 @@ function axiosWithResult(result: Promise<{ data: string }>): AxiosInstance {
   } as unknown as AxiosInstance;
 }
 
+function deferred<T>(): {
+  promise: Promise<T>;
+  resolve: (value: T | PromiseLike<T>) => void;
+  reject: (reason?: unknown) => void;
+} {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((promiseResolve, promiseReject) => {
+    resolve = promiseResolve;
+    reject = promiseReject;
+  });
+  return { promise, resolve, reject };
+}
+
 async function flushParserQueue(): Promise<void> {
   await new Promise<void>((resolve) => {
     setImmediate(resolve);
@@ -173,5 +187,76 @@ describe('parseNic', () => {
     expect(botMocks.telegram.sendMessage).toHaveBeenCalledWith('owner-id', 'network down', {
       parse_mode: 'Markdown',
     });
+  });
+
+  it('awaits fetch, Mongo, WHOIS, and Telegram work before resolving', async () => {
+    const fetchDeferred = deferred<{ data: string }>();
+    const telegramDeferred = deferred<void>();
+    const fakeAxios = axiosWithResult(fetchDeferred.promise);
+    dbState.domainsCollection.findOne.mockResolvedValue(null);
+    whoisMocks.whoisAndParse.mockResolvedValue(parsedDomainData);
+    botMocks.telegram.sendMessage.mockReturnValue(telegramDeferred.promise);
+    const { parseNic } = await loadParser();
+    const onResolved = vi.fn();
+
+    const parserPromise = parseNic(fakeAxios).then(onResolved);
+    await vi.waitFor(() => expect(fakeAxios.get).toHaveBeenCalledTimes(1));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(onResolved).not.toHaveBeenCalled();
+
+    fetchDeferred.resolve({ data: nicHtml });
+    await vi.waitFor(() => expect(botMocks.telegram.sendMessage).toHaveBeenCalledTimes(1));
+    expect(dbState.domainsCollection.insertOne).toHaveBeenCalledWith(
+      expect.objectContaining({ domain: 'example.kz' }),
+    );
+    expect(whoisMocks.whoisAndParse).toHaveBeenCalledWith('example.kz', false);
+    expect(onResolved).not.toHaveBeenCalled();
+
+    telegramDeferred.resolve();
+    await parserPromise;
+
+    expect(onResolved).toHaveBeenCalledTimes(1);
+  });
+
+  it('catches and logs Telegram send rejections from domain notifications', async () => {
+    dbState.domainsCollection.findOne.mockResolvedValue(null);
+    whoisMocks.whoisAndParse.mockResolvedValue(parsedDomainData);
+    botMocks.telegram.sendMessage.mockRejectedValue(new Error('telegram down'));
+    const { parseNic } = await loadParser();
+
+    await parseNic(axiosWithResult(Promise.resolve({ data: nicHtml })));
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      '[PARSER] insert error',
+      expect.objectContaining({ message: 'telegram down' }),
+    );
+  });
+
+  it('joins concurrent parser calls and runs the core workflow once', async () => {
+    const fetchDeferred = deferred<{ data: string }>();
+    const fakeAxios = axiosWithResult(fetchDeferred.promise);
+    dbState.domainsCollection.findOne.mockResolvedValue(null);
+    whoisMocks.whoisAndParse.mockResolvedValue(parsedDomainData);
+    botMocks.telegram.sendMessage.mockResolvedValue(undefined);
+    const { parseNic } = await loadParser();
+
+    const firstRun = parseNic(fakeAxios);
+    await vi.waitFor(() => expect(fakeAxios.get).toHaveBeenCalledTimes(1));
+
+    const secondRun = parseNic(fakeAxios);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(fakeAxios.get).toHaveBeenCalledTimes(1);
+
+    fetchDeferred.resolve({ data: nicHtml });
+    await Promise.all([firstRun, secondRun]);
+
+    expect(dbState.domainsCollection.findOne).toHaveBeenCalledTimes(1);
+    expect(whoisMocks.whoisAndParse).toHaveBeenCalledTimes(1);
+    expect(dbState.domainsCollection.insertOne).toHaveBeenCalledTimes(1);
+    expect(botMocks.telegram.sendMessage).toHaveBeenCalledTimes(1);
   });
 });

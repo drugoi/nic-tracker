@@ -35,101 +35,113 @@ async function parseDomain(
   return domainsData;
 }
 
-export async function parseNic(axiosInstance?: AxiosInstance): Promise<void> {
+let activeParseNic: Promise<void> | undefined;
+
+export function parseNic(axiosInstance?: AxiosInstance): Promise<void> {
+  activeParseNic ??= runParseNic(axiosInstance).finally(() => {
+    activeParseNic = undefined;
+  });
+
+  return activeParseNic;
+}
+
+async function runParseNic(axiosInstance?: AxiosInstance): Promise<void> {
   const requestInstance = axiosInstance ?? (await request.getInstance());
   const dbInstance = await db.getDb();
 
-  requestInstance
-    .get('')
-    .then(async (res) => {
-      const $ = cheerio.load(res.data as string);
-      const domainsTable = $(
-        '#last-ten-table > tbody > tr:nth-child(2) > td > table > tbody',
-      );
+  try {
+    const res = await requestInstance.get('');
+    const $ = cheerio.load(res.data as string);
+    const domainsTable = $(
+      '#last-ten-table > tbody > tr:nth-child(2) > td > table > tbody',
+    );
 
-      const newDomains: Pick<DomainDoc, 'domain' | 'nicDate' | 'date'>[] = [];
+    const newDomains: Pick<DomainDoc, 'domain' | 'nicDate' | 'date'>[] = [];
 
-      const tbody = domainsTable.get(0);
-      if (!tbody || !tbody.children) {
-        return;
+    const tbody = domainsTable.get(0);
+    if (!tbody || !tbody.children) {
+      return;
+    }
+
+    for (const domain of tbody.children) {
+      const row = $(domain);
+      const link = $('a', domain).first();
+      if (link.length > 0) {
+        const newDomain: Pick<DomainDoc, 'domain' | 'nicDate' | 'date'> = {
+          domain: link.text(),
+          nicDate: row.find('td:first-child').text(),
+          date: Date.now(),
+        };
+        newDomains.push(newDomain);
       }
+    }
 
-      for (const domain of tbody.children) {
-        const row = $(domain);
-        const link = $('a', domain).first();
-        if (link.length > 0) {
-          const newDomain: Pick<DomainDoc, 'domain' | 'nicDate' | 'date'> = {
-            domain: link.text(),
-            nicDate: row.find('td:first-child').text(),
-            date: Date.now(),
-          };
-          newDomains.push(newDomain);
-        }
-      }
+    const domainsCollection = dbInstance.collection<DomainDoc>('domains');
 
-      const domainsCollection = dbInstance.collection<DomainDoc>('domains');
+    try {
+      const domainsToSend: DomainDoc[] = [];
 
-      try {
-        const domainsToSend: DomainDoc[] = [];
+      for (const domain of newDomains) {
+        const existedDomain = await domainsCollection.findOne({
+          domain: domain.domain,
+        });
 
-        for (const domain of newDomains) {
-          const existedDomain = await domainsCollection.findOne({
-            domain: domain.domain,
-          });
+        if (
+          existedDomain
+          && Date.now() - new Date(existedDomain.date).getTime()
+            > 1000 * 60 * 60 * 24 * 10
+        ) {
+          const domainsData = await parseDomain(domain);
 
-          if (
-            existedDomain
-            && Date.now() - new Date(existedDomain.date).getTime()
-              > 1000 * 60 * 60 * 24 * 10
-          ) {
-            const domainsData = await parseDomain(domain);
-
-            if (domain.domain.includes('bereke')) {
-              bot.telegram.sendMessage(
-                env.tgOwnerId,
-                `Новый домен: ${domain.domain}`,
-                {
-                  parse_mode: 'Markdown',
-                },
-              );
-            }
-
-            await domainsCollection.updateOne(
-              { _id: new ObjectId(existedDomain._id) },
-              { $set: domainsData },
+          if (domain.domain.includes('bereke')) {
+            await bot.telegram.sendMessage(
+              env.tgOwnerId,
+              `Новый домен: ${domain.domain}`,
+              {
+                parse_mode: 'Markdown',
+              },
             );
-
-            const copyForOld = { ...existedDomain, _id: new ObjectId() };
-            await dbInstance.collection('oldDomains').insertOne(copyForOld);
-
-            domainsToSend.push(domainsData);
-          } else if (!existedDomain) {
-            const domainsData = await parseDomain(domain);
-            await domainsCollection.insertOne(domainsData);
-            domainsToSend.push(domainsData);
           }
-        }
 
-        for (const domain of domainsToSend) {
-          const message = await prepareDomainMessage({
-            domain: domain.domain,
-            ...domain.whois,
-          });
+          await domainsCollection.updateOne(
+            { _id: new ObjectId(existedDomain._id) },
+            { $set: domainsData },
+          );
 
-          bot.telegram.sendMessage(env.tgChannelId, message, {
-            parse_mode: 'MarkdownV2',
-          });
+          const copyForOld = { ...existedDomain, _id: new ObjectId() };
+          await dbInstance.collection('oldDomains').insertOne(copyForOld);
+
+          domainsToSend.push(domainsData);
+        } else if (!existedDomain) {
+          const domainsData = await parseDomain(domain);
+          await domainsCollection.insertOne(domainsData);
+          domainsToSend.push(domainsData);
         }
-      } catch (error) {
-        console.error('[PARSER] insert error', error);
       }
-    })
-    .catch((err: unknown) => {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error('[PARSER] fetch error', message);
 
-      bot.telegram.sendMessage(env.tgOwnerId, message, {
+      for (const domain of domainsToSend) {
+        const message = await prepareDomainMessage({
+          domain: domain.domain,
+          ...domain.whois,
+        });
+
+        await bot.telegram.sendMessage(env.tgChannelId, message, {
+          parse_mode: 'MarkdownV2',
+        });
+      }
+    } catch (error) {
+      console.error('[PARSER] insert error', error);
+    }
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[PARSER] fetch error', message);
+
+    try {
+      await bot.telegram.sendMessage(env.tgOwnerId, message, {
         parse_mode: 'Markdown',
       });
-    });
+    } catch (error) {
+      console.error('[PARSER] notify owner error', error);
+    }
+  }
 }
