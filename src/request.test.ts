@@ -84,9 +84,9 @@ describe('request proxy setup', () => {
     expect(instance.defaults.proxy).toBe(false);
   });
 
-  it('keeps the existing client on the first proxy until Axios is explicitly reinitialized', async () => {
+  it('keeps the existing client on the first proxy until Axios is explicitly refreshed', async () => {
     dbState.settingsDoc = { proxy: 'http://first.example:8080' };
-    const { getInstance, initAxios } = await loadRequest();
+    const { getInstance, initAxios, refreshAxios } = await loadRequest();
     const firstInstance = await initAxios();
     const firstAgent = firstInstance.defaults.httpsAgent;
 
@@ -97,14 +97,27 @@ describe('request proxy setup', () => {
     expect(cachedInstance.defaults.httpsAgent).toBe(firstAgent);
     expect(tunnelMocks.httpsOverHttp).toHaveBeenCalledTimes(1);
 
-    const reinitializedInstance = await initAxios();
+    const refreshedInstance = await refreshAxios();
 
-    expect(reinitializedInstance).not.toBe(firstInstance);
+    expect(refreshedInstance).not.toBe(firstInstance);
     expect(tunnelMocks.httpsOverHttp).toHaveBeenLastCalledWith({
       proxy: {
         host: 'second.example',
         port: 9090,
       },
     });
+  });
+
+  it('refreshes Axios to disable the tunnel when the settings proxy is cleared', async () => {
+    dbState.settingsDoc = { proxy: 'http://proxy.example:8080' };
+    const { initAxios, refreshAxios } = await loadRequest();
+    const firstInstance = await initAxios();
+
+    dbState.settingsDoc = { proxy: '' };
+    const refreshedInstance = await refreshAxios();
+
+    expect(refreshedInstance).not.toBe(firstInstance);
+    expect(refreshedInstance.defaults.httpsAgent).toBe(false);
+    expect(refreshedInstance.defaults.proxy).toBe(false);
   });
 });

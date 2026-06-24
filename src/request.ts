@@ -43,6 +43,11 @@ export async function initAxios(): Promise<AxiosInstance> {
   return instance;
 }
 
+export async function refreshAxios(): Promise<AxiosInstance> {
+  instance = undefined;
+  return initAxios();
+}
+
 export async function getInstance(): Promise<AxiosInstance> {
   if (!instance) {
     await initAxios();
