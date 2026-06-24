@@ -25,6 +25,7 @@ const botMocks = vi.hoisted(() => ({
 const dbMocks = vi.hoisted(() => ({
   addWatchTerm: vi.fn(),
   getDb: vi.fn(),
+  getStatus: vi.fn(),
   getWatchTerms: vi.fn(),
   removeWatchTerm: vi.fn(),
   updateSettings: vi.fn(),
@@ -78,6 +79,7 @@ describe('bot commands', () => {
     botMocks.stop.mockClear();
     dbMocks.addWatchTerm.mockReset();
     dbMocks.getDb.mockReset();
+    dbMocks.getStatus.mockReset();
     dbMocks.getWatchTerms.mockReset();
     dbMocks.removeWatchTerm.mockReset();
     dbMocks.updateSettings.mockReset();
@@ -263,6 +265,43 @@ describe('bot commands', () => {
     expect(ctx.reply).toHaveBeenCalledWith('Отслеживаемые термины: acme');
   });
 
+  it('replies to the owner with parser status and a redacted enabled proxy', async () => {
+    const findOne = vi.fn().mockResolvedValue({
+      proxy: 'http://user:secret@proxy.example:3128/private',
+    });
+    const collection = vi.fn(() => ({ findOne }));
+    dbMocks.getDb.mockResolvedValue({ collection });
+    dbMocks.getStatus.mockResolvedValue({
+      lastStartedAt: Date.UTC(2026, 5, 24, 6, 0, 0),
+      lastFinishedAt: Date.UTC(2026, 5, 24, 6, 1, 0),
+      lastSuccessAt: Date.UTC(2026, 5, 24, 6, 1, 0),
+      lastError: 'network timeout while fetching NIC data',
+      lastDomainCount: 3,
+    });
+    const handler = await loadHandler('status');
+    const ctx: TestContext = {
+      from: { id: 1001 },
+      reply: vi.fn(),
+    };
+
+    await handler(ctx);
+
+    expect(collection).toHaveBeenCalledWith('settings');
+    expect(findOne).toHaveBeenCalledWith({});
+    expect(dbMocks.getStatus).toHaveBeenCalledOnce();
+    expect(ctx.reply).toHaveBeenCalledOnce();
+    const reply = ctx.reply.mock.calls[0]?.[0] as string;
+    expect(reply).toContain('Last started: 2026-06-24T06:00:00.000Z');
+    expect(reply).toContain('Last finished: 2026-06-24T06:01:00.000Z');
+    expect(reply).toContain('Last success: 2026-06-24T06:01:00.000Z');
+    expect(reply).toContain('Last domain count: 3');
+    expect(reply).toContain('Last error: network timeout while fetching NIC data');
+    expect(reply).toContain('Proxy: enabled (http://proxy.example:3128)');
+    expect(reply).not.toContain('user');
+    expect(reply).not.toContain('secret');
+    expect(reply).not.toContain('/private');
+  });
+
   it('rejects watch term listing from non-owner users', async () => {
     const handler = await loadHandler('watchterms');
     const ctx: TestContext = {
@@ -274,6 +313,20 @@ describe('bot commands', () => {
 
     expect(ctx.reply).toHaveBeenCalledWith('Недостаточно прав');
     expect(dbMocks.getWatchTerms).not.toHaveBeenCalled();
+  });
+
+  it('rejects status reads from non-owner users', async () => {
+    const handler = await loadHandler('status');
+    const ctx: TestContext = {
+      from: { id: 2002 },
+      reply: vi.fn(),
+    };
+
+    await handler(ctx);
+
+    expect(ctx.reply).toHaveBeenCalledWith('Недостаточно прав');
+    expect(dbMocks.getStatus).not.toHaveBeenCalled();
+    expect(dbMocks.getDb).not.toHaveBeenCalled();
   });
 
   it('rejects watch term updates from non-owner users', async () => {

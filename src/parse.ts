@@ -10,6 +10,8 @@ import type { DomainDoc } from './types.js';
 import { whoisAndParse } from './whois.js';
 import { env } from './env.js';
 
+const maxStoredErrorLength = 240;
+
 async function parseDomain(
   domain: Pick<DomainDoc, 'domain' | 'nicDate' | 'date'>,
 ): Promise<DomainDoc> {
@@ -44,6 +46,42 @@ function matchesWatchTerm(domain: string, watchTerms: string[]): boolean {
   return watchTerms.some((term) => normalizedDomain.includes(term.toLowerCase()));
 }
 
+function sanitizeParserError(error: unknown): string {
+  const rawMessage = error instanceof Error ? error.message : String(error);
+  const compactMessage = rawMessage.replace(/\s+/g, ' ').trim() || 'Unknown parser error';
+  const redactedMessage = compactMessage
+    .replace(
+      /(\b[a-z][a-z\d+.-]*:\/\/)([^/\s:@]+):([^@\s/]+)@/gi,
+      '$1[redacted]@',
+    )
+    .replace(/\b(password|token|secret)=\S+/gi, '$1=[redacted]');
+
+  if (redactedMessage.length <= maxStoredErrorLength) {
+    return redactedMessage;
+  }
+
+  return `${redactedMessage.slice(0, maxStoredErrorLength - 3)}...`;
+}
+
+async function recordParserSuccess(lastDomainCount: number): Promise<void> {
+  const finishedAt = Date.now();
+  await db.updateParserStatus({
+    lastFinishedAt: finishedAt,
+    lastSuccessAt: finishedAt,
+    lastDomainCount,
+    lastError: undefined,
+  });
+}
+
+async function recordParserFailure(error: unknown): Promise<string> {
+  const message = sanitizeParserError(error);
+  await db.updateParserStatus({
+    lastFinishedAt: Date.now(),
+    lastError: message,
+  });
+  return message;
+}
+
 let activeParseNic: Promise<void> | undefined;
 
 export function parseNic(axiosInstance?: AxiosInstance): Promise<void> {
@@ -58,6 +96,7 @@ async function runParseNic(axiosInstance?: AxiosInstance): Promise<void> {
   const requestInstance = axiosInstance ?? (await request.getInstance());
   const dbInstance = await db.getDb();
   const watchTerms = await db.getWatchTerms();
+  await db.updateParserStatus({ lastStartedAt: Date.now() });
 
   try {
     const res = await requestInstance.get('');
@@ -70,6 +109,7 @@ async function runParseNic(axiosInstance?: AxiosInstance): Promise<void> {
 
     const tbody = domainsTable.get(0);
     if (!tbody || !tbody.children) {
+      await recordParserSuccess(0);
       return;
     }
 
@@ -142,9 +182,12 @@ async function runParseNic(axiosInstance?: AxiosInstance): Promise<void> {
       }
     } catch (error) {
       console.error('[PARSER] insert error', error);
+      await recordParserFailure(error);
+      return;
     }
+    await recordParserSuccess(newDomains.length);
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
+    const message = await recordParserFailure(err);
     console.error('[PARSER] fetch error', message);
 
     try {

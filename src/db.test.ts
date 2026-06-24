@@ -206,3 +206,69 @@ describe('watch terms settings', () => {
     );
   });
 });
+
+describe('parser status helpers', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    dbState.domainsCollection.createIndexes.mockReset();
+    dbState.domainsCollection.indexes.mockReset();
+    dbState.settingsCollection.findOne.mockReset();
+    dbState.settingsCollection.insertOne.mockReset();
+    dbState.settingsCollection.updateOne.mockReset();
+    dbState.collection.mockClear();
+    dbState.client.connect.mockReset();
+    dbState.client.db.mockClear();
+    dbState.MongoClient.mockClear();
+    dbState.MongoClient.mockReturnValue(dbState.client);
+  });
+
+  it('returns an empty parser status when settings do not have one', async () => {
+    const { getStatus } = await loadInitializedDb();
+    dbState.settingsCollection.findOne.mockResolvedValue({ proxy: '' });
+
+    await expect(getStatus()).resolves.toEqual({});
+  });
+
+  it('creates settings with default proxy when updating status and settings are missing', async () => {
+    const { updateParserStatus } = await loadInitializedDb();
+    dbState.settingsCollection.findOne.mockResolvedValue(null);
+
+    await updateParserStatus({ lastStartedAt: 1000, lastDomainCount: 3 });
+
+    expect(dbState.settingsCollection.insertOne).toHaveBeenCalledWith({
+      proxy: '',
+      parserStatus: {
+        lastStartedAt: 1000,
+        lastDomainCount: 3,
+      },
+    });
+    expect(dbState.settingsCollection.updateOne).not.toHaveBeenCalled();
+  });
+
+  it('merges parser status without replacing other settings fields', async () => {
+    const { updateParserStatus } = await loadInitializedDb();
+    dbState.settingsCollection.findOne.mockResolvedValue({
+      proxy: 'http://proxy.example:3128',
+      futureField: true,
+      parserStatus: {
+        lastStartedAt: 1000,
+        lastError: 'previous error',
+      },
+    });
+
+    await updateParserStatus({ lastFinishedAt: 2000, lastError: undefined });
+
+    expect(dbState.settingsCollection.updateOne).toHaveBeenCalledWith(
+      {},
+      {
+        $set: {
+          parserStatus: {
+            lastStartedAt: 1000,
+            lastFinishedAt: 2000,
+          },
+        },
+      },
+    );
+    expect(dbState.settingsCollection.insertOne).not.toHaveBeenCalled();
+  });
+});
