@@ -3,6 +3,8 @@ import type { WhoisField } from 'parse-whois';
 
 export interface SettingsDoc {
   proxy?: string;
+  parserStatus?: unknown;
+  watchTerms?: string[];
 }
 
 export interface DomainDoc {

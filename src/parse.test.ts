@@ -27,6 +27,7 @@ const dbState = vi.hoisted(() => {
     },
     collection: vi.fn(),
     getDb: vi.fn(),
+    getWatchTerms: vi.fn(),
   };
   state.collection.mockImplementation((name: string) => {
     if (name === 'domains') {
@@ -57,6 +58,7 @@ vi.mock('./request.js', () => requestMocks);
 
 vi.mock('./db.js', () => ({
   getDb: dbState.getDb,
+  getWatchTerms: dbState.getWatchTerms,
 }));
 
 vi.mock('./bot-setup.js', () => ({
@@ -75,6 +77,12 @@ vi.mock('./env.js', () => ({
 const nicHtml = `<table id="last-ten-table"><tbody><tr></tr><tr><td><table><tbody>
 <tr><td>2026-06-24</td><td><a>example.kz</a></td></tr>
 </tbody></table></td></tr></tbody></table>`;
+
+function nicHtmlFor(domain: string): string {
+  return `<table id="last-ten-table"><tbody><tr></tr><tr><td><table><tbody>
+<tr><td>2026-06-24</td><td><a>${domain}</a></td></tr>
+</tbody></table></td></tr></tbody></table>`;
+}
 
 const fixtureUrl = new URL('./fixtures/nic-last-ten.html', import.meta.url);
 
@@ -131,6 +139,8 @@ describe('parseNic', () => {
     dbState.oldDomainsCollection.insertOne.mockReset();
     dbState.collection.mockClear();
     dbState.getDb.mockClear();
+    dbState.getWatchTerms.mockReset();
+    dbState.getWatchTerms.mockResolvedValue(['bereke']);
     requestMocks.getInstance.mockReset();
     botMocks.telegram.sendMessage.mockReset();
     whoisMocks.whoisAndParse.mockReset();
@@ -247,6 +257,97 @@ describe('parseNic', () => {
     expect(dbState.domainsCollection.insertOne).not.toHaveBeenCalled();
     expect(dbState.domainsCollection.updateOne).not.toHaveBeenCalled();
     expect(botMocks.telegram.sendMessage).not.toHaveBeenCalled();
+  });
+
+  it('alerts the owner for stale bereke domains when watch terms are missing', async () => {
+    dbState.getWatchTerms.mockResolvedValue(['bereke']);
+    dbState.domainsCollection.findOne.mockResolvedValue({
+      _id: '000000000000000000000001',
+      domain: 'bereke-example.kz',
+      nicDate: '2026-06-10',
+      date: Date.now() - 1000 * 60 * 60 * 24 * 11,
+    });
+    whoisMocks.whoisAndParse.mockResolvedValue(parsedDomainData);
+    const { parseNic } = await loadParser();
+
+    await parseNic(axiosWithResult(Promise.resolve({ data: nicHtmlFor('bereke-example.kz') })));
+    await flushParserQueue();
+
+    expect(dbState.getWatchTerms).toHaveBeenCalledTimes(1);
+    expect(botMocks.telegram.sendMessage).toHaveBeenCalledWith(
+      'owner-id',
+      'Новый домен: bereke-example.kz',
+      {
+        parse_mode: 'Markdown',
+      },
+    );
+  });
+
+  it('alerts the owner for configured watch terms', async () => {
+    dbState.getWatchTerms.mockResolvedValue(['acme']);
+    dbState.domainsCollection.findOne.mockResolvedValue({
+      _id: '000000000000000000000002',
+      domain: 'new-acme.kz',
+      nicDate: '2026-06-10',
+      date: Date.now() - 1000 * 60 * 60 * 24 * 11,
+    });
+    whoisMocks.whoisAndParse.mockResolvedValue(parsedDomainData);
+    const { parseNic } = await loadParser();
+
+    await parseNic(axiosWithResult(Promise.resolve({ data: nicHtmlFor('new-acme.kz') })));
+    await flushParserQueue();
+
+    expect(botMocks.telegram.sendMessage).toHaveBeenCalledWith(
+      'owner-id',
+      'Новый домен: new-acme.kz',
+      {
+        parse_mode: 'Markdown',
+      },
+    );
+  });
+
+  it('does not alert the owner for unrelated domains', async () => {
+    dbState.getWatchTerms.mockResolvedValue(['acme']);
+    dbState.domainsCollection.findOne.mockResolvedValue({
+      _id: '000000000000000000000003',
+      domain: 'unrelated.kz',
+      nicDate: '2026-06-10',
+      date: Date.now() - 1000 * 60 * 60 * 24 * 11,
+    });
+    whoisMocks.whoisAndParse.mockResolvedValue(parsedDomainData);
+    const { parseNic } = await loadParser();
+
+    await parseNic(axiosWithResult(Promise.resolve({ data: nicHtmlFor('unrelated.kz') })));
+    await flushParserQueue();
+
+    expect(botMocks.telegram.sendMessage).not.toHaveBeenCalledWith(
+      'owner-id',
+      expect.any(String),
+      expect.anything(),
+    );
+  });
+
+  it('matches configured watch terms case-insensitively', async () => {
+    dbState.getWatchTerms.mockResolvedValue(['ACME']);
+    dbState.domainsCollection.findOne.mockResolvedValue({
+      _id: '000000000000000000000004',
+      domain: 'New-AcMe.kz',
+      nicDate: '2026-06-10',
+      date: Date.now() - 1000 * 60 * 60 * 24 * 11,
+    });
+    whoisMocks.whoisAndParse.mockResolvedValue(parsedDomainData);
+    const { parseNic } = await loadParser();
+
+    await parseNic(axiosWithResult(Promise.resolve({ data: nicHtmlFor('New-AcMe.kz') })));
+    await flushParserQueue();
+
+    expect(botMocks.telegram.sendMessage).toHaveBeenCalledWith(
+      'owner-id',
+      'Новый домен: New-AcMe.kz',
+      {
+        parse_mode: 'Markdown',
+      },
+    );
   });
 
   it('notifies the Telegram owner when fetching NIC fails', async () => {
