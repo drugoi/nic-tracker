@@ -3,6 +3,21 @@ import { updateSettings, getDb } from './db.js';
 import { whoisAndParse } from './whois.js';
 import { parseNic } from './parse.js';
 import { getInstance } from './request.js';
+import { env } from './env.js';
+
+interface OwnerContext {
+  from?: { id?: number | string };
+  reply: (text: string) => Promise<unknown> | unknown;
+}
+
+async function ensureOwner(ctx: OwnerContext): Promise<boolean> {
+  if (String(ctx.from?.id) === env.tgOwnerId) {
+    return true;
+  }
+
+  await ctx.reply('Недостаточно прав');
+  return false;
+}
 
 bot.catch((err, ctx) => {
   console.error(`bot.catch ${ctx.updateType}`, err);
@@ -15,6 +30,10 @@ bot.command('start', (ctx) => {
 });
 
 bot.command('proxy', async (ctx) => {
+  if (!(await ensureOwner(ctx))) {
+    return;
+  }
+
   const { message } = ctx;
   if (!message || !('text' in message)) {
     return;
@@ -31,6 +50,10 @@ bot.command('proxy', async (ctx) => {
 });
 
 bot.command('disableproxy', async (ctx) => {
+  if (!(await ensureOwner(ctx))) {
+    return;
+  }
+
   await updateSettings('');
   await ctx.reply('Прокси успешно отключена');
   const instance = await getInstance();
@@ -38,6 +61,10 @@ bot.command('disableproxy', async (ctx) => {
 });
 
 bot.command('getproxy', async (ctx) => {
+  if (!(await ensureOwner(ctx))) {
+    return;
+  }
+
   const database = await getDb();
   const doc = await database.collection('settings').findOne({});
   const proxyUrl = doc && typeof doc.proxy === 'string' ? doc.proxy : undefined;
