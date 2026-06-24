@@ -66,9 +66,10 @@ async function runParseNic(axiosInstance?: AxiosInstance): Promise<void> {
     for (const domain of tbody.children) {
       const row = $(domain);
       const link = $('a', domain).first();
-      if (link.length > 0) {
+      const domainName = link.text().trim();
+      if (link.length > 0 && domainName.toLowerCase().endsWith('.kz')) {
         const newDomain: Pick<DomainDoc, 'domain' | 'nicDate' | 'date'> = {
-          domain: link.text(),
+          domain: domainName,
           nicDate: row.find('td:first-child').text(),
           date: Date.now(),
         };

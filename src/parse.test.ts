@@ -1,4 +1,5 @@
 import type { AxiosInstance } from 'axios';
+import { readFile } from 'node:fs/promises';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MockInstance } from 'vitest';
 
@@ -74,6 +75,8 @@ vi.mock('./env.js', () => ({
 const nicHtml = `<table id="last-ten-table"><tbody><tr></tr><tr><td><table><tbody>
 <tr><td>2026-06-24</td><td><a>example.kz</a></td></tr>
 </tbody></table></td></tr></tbody></table>`;
+
+const fixtureUrl = new URL('./fixtures/nic-last-ten.html', import.meta.url);
 
 const parsedDomainData: ParsedDomainData = {
   whoisData: [{ attribute: 'Organization Name', value: 'Example Org' }],
@@ -158,6 +161,64 @@ describe('parseNic', () => {
         parse_mode: 'MarkdownV2',
       },
     );
+  });
+
+  it('extracts domain rows from saved NIC fixture and ignores non-domain rows', async () => {
+    dbState.domainsCollection.findOne.mockResolvedValue(null);
+    whoisMocks.whoisAndParse.mockResolvedValue(parsedDomainData);
+    const fixtureHtml = await readFile(fixtureUrl, 'utf8');
+    const { parseNic } = await loadParser();
+
+    await parseNic(axiosWithResult(Promise.resolve({ data: fixtureHtml })));
+    await flushParserQueue();
+
+    expect(dbState.domainsCollection.findOne).toHaveBeenCalledTimes(2);
+    expect(dbState.domainsCollection.findOne).toHaveBeenNthCalledWith(1, {
+      domain: 'alpha-example.kz',
+    });
+    expect(dbState.domainsCollection.findOne).toHaveBeenNthCalledWith(2, {
+      domain: 'beta-example.kz',
+    });
+    expect(dbState.domainsCollection.insertOne).toHaveBeenCalledTimes(2);
+    expect(dbState.domainsCollection.insertOne).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        domain: 'alpha-example.kz',
+        nicDate: '2026-06-24 12:30',
+      }),
+    );
+    expect(dbState.domainsCollection.insertOne).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        domain: 'beta-example.kz',
+        nicDate: '2026-06-24 12:29',
+      }),
+    );
+    expect(whoisMocks.whoisAndParse).toHaveBeenCalledTimes(2);
+    expect(whoisMocks.whoisAndParse).not.toHaveBeenCalledWith(
+      'registration rules',
+      false,
+    );
+  });
+
+  it('returns without domains when the NIC table is missing or empty', async () => {
+    dbState.domainsCollection.findOne.mockResolvedValue(null);
+    const { parseNic } = await loadParser();
+
+    await parseNic(axiosWithResult(Promise.resolve({ data: '<main></main>' })));
+    await parseNic(
+      axiosWithResult(
+        Promise.resolve({
+          data: '<table id="last-ten-table"><tbody><tr></tr><tr><td><table><tbody></tbody></table></td></tr></tbody></table>',
+        }),
+      ),
+    );
+    await flushParserQueue();
+
+    expect(dbState.domainsCollection.findOne).not.toHaveBeenCalled();
+    expect(dbState.domainsCollection.insertOne).not.toHaveBeenCalled();
+    expect(whoisMocks.whoisAndParse).not.toHaveBeenCalled();
+    expect(botMocks.telegram.sendMessage).not.toHaveBeenCalled();
   });
 
   it('skips an existing domain younger than 10 days', async () => {
