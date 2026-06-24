@@ -7,6 +7,7 @@ interface TestMessage {
 
 interface TestContext {
   message?: TestMessage;
+  from?: { id: number };
   reply: ReturnType<typeof vi.fn>;
 }
 
@@ -34,6 +35,9 @@ const parseMocks = vi.hoisted(() => ({
 const whoisMocks = vi.hoisted(() => ({
   whoisAndParse: vi.fn(),
 }));
+const envMocks = vi.hoisted(() => ({
+  tgOwnerId: '1001',
+}));
 
 vi.mock('./bot-setup.js', () => ({
   bot: botMocks,
@@ -46,6 +50,10 @@ vi.mock('./request.js', () => requestMocks);
 vi.mock('./parse.js', () => parseMocks);
 
 vi.mock('./whois.js', () => whoisMocks);
+
+vi.mock('./env.js', () => ({
+  env: envMocks,
+}));
 
 async function loadHandler(command: string): Promise<CommandHandler> {
   await import('./bot.js');
@@ -76,6 +84,7 @@ describe('bot commands', () => {
     requestMocks.getInstance.mockResolvedValue(axiosInstance);
     const handler = await loadHandler('proxy');
     const ctx: TestContext = {
+      from: { id: 1001 },
       message: {
         text: '/proxy http://proxy.example:8080',
         entities: [{ type: 'url' }],
@@ -96,6 +105,7 @@ describe('bot commands', () => {
     requestMocks.getInstance.mockResolvedValue(axiosInstance);
     const handler = await loadHandler('disableproxy');
     const ctx: TestContext = {
+      from: { id: 1001 },
       reply: vi.fn(),
     };
 
@@ -113,6 +123,7 @@ describe('bot commands', () => {
     dbMocks.getDb.mockResolvedValue({ collection });
     const handler = await loadHandler('getproxy');
     const ctx: TestContext = {
+      from: { id: 1001 },
       reply: vi.fn(),
     };
 
@@ -121,6 +132,58 @@ describe('bot commands', () => {
     expect(collection).toHaveBeenCalledWith('settings');
     expect(findOne).toHaveBeenCalledWith({});
     expect(ctx.reply).toHaveBeenCalledWith('http://proxy.example:3128');
+  });
+
+  it('rejects proxy URL updates from non-owner users', async () => {
+    const handler = await loadHandler('proxy');
+    const ctx: TestContext = {
+      from: { id: 2002 },
+      message: {
+        text: '/proxy http://proxy.example:8080',
+        entities: [{ type: 'url' }],
+      },
+      reply: vi.fn(),
+    };
+
+    await handler(ctx);
+
+    expect(ctx.reply).toHaveBeenCalledWith('Недостаточно прав');
+    expect(dbMocks.updateSettings).not.toHaveBeenCalled();
+    expect(dbMocks.getDb).not.toHaveBeenCalled();
+    expect(requestMocks.getInstance).not.toHaveBeenCalled();
+    expect(parseMocks.parseNic).not.toHaveBeenCalled();
+  });
+
+  it('rejects proxy disabling from non-owner users', async () => {
+    const handler = await loadHandler('disableproxy');
+    const ctx: TestContext = {
+      from: { id: 2002 },
+      reply: vi.fn(),
+    };
+
+    await handler(ctx);
+
+    expect(ctx.reply).toHaveBeenCalledWith('Недостаточно прав');
+    expect(dbMocks.updateSettings).not.toHaveBeenCalled();
+    expect(dbMocks.getDb).not.toHaveBeenCalled();
+    expect(requestMocks.getInstance).not.toHaveBeenCalled();
+    expect(parseMocks.parseNic).not.toHaveBeenCalled();
+  });
+
+  it('rejects proxy reads from non-owner users', async () => {
+    const handler = await loadHandler('getproxy');
+    const ctx: TestContext = {
+      from: { id: 2002 },
+      reply: vi.fn(),
+    };
+
+    await handler(ctx);
+
+    expect(ctx.reply).toHaveBeenCalledWith('Недостаточно прав');
+    expect(dbMocks.updateSettings).not.toHaveBeenCalled();
+    expect(dbMocks.getDb).not.toHaveBeenCalled();
+    expect(requestMocks.getInstance).not.toHaveBeenCalled();
+    expect(parseMocks.parseNic).not.toHaveBeenCalled();
   });
 
   it('replies with full WHOIS data for the requested domain', async () => {
