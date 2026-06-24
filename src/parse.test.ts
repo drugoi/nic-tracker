@@ -27,6 +27,7 @@ const dbState = vi.hoisted(() => {
     },
     collection: vi.fn(),
     getDb: vi.fn(),
+    updateParserStatus: vi.fn(),
   };
   state.collection.mockImplementation((name: string) => {
     if (name === 'domains') {
@@ -57,6 +58,7 @@ vi.mock('./request.js', () => requestMocks);
 
 vi.mock('./db.js', () => ({
   getDb: dbState.getDb,
+  updateParserStatus: dbState.updateParserStatus,
 }));
 
 vi.mock('./bot-setup.js', () => ({
@@ -131,6 +133,7 @@ describe('parseNic', () => {
     dbState.oldDomainsCollection.insertOne.mockReset();
     dbState.collection.mockClear();
     dbState.getDb.mockClear();
+    dbState.updateParserStatus.mockReset();
     requestMocks.getInstance.mockReset();
     botMocks.telegram.sendMessage.mockReset();
     whoisMocks.whoisAndParse.mockReset();
@@ -258,6 +261,47 @@ describe('parseNic', () => {
     expect(botMocks.telegram.sendMessage).toHaveBeenCalledWith('owner-id', 'network down', {
       parse_mode: 'Markdown',
     });
+  });
+
+  it('records parser start and success status with the scraped domain count', async () => {
+    dbState.domainsCollection.findOne.mockResolvedValue(null);
+    whoisMocks.whoisAndParse.mockResolvedValue(parsedDomainData);
+    const { parseNic } = await loadParser();
+
+    await parseNic(axiosWithResult(Promise.resolve({ data: nicHtml })));
+    await flushParserQueue();
+
+    expect(dbState.updateParserStatus).toHaveBeenNthCalledWith(1, {
+      lastStartedAt: expect.any(Number),
+    });
+    expect(dbState.updateParserStatus).toHaveBeenLastCalledWith({
+      lastFinishedAt: expect.any(Number),
+      lastSuccessAt: expect.any(Number),
+      lastDomainCount: 1,
+      lastError: undefined,
+    });
+  });
+
+  it('records a shortened parser failure status without stack details', async () => {
+    const error = new Error(`${'network down '.repeat(40)}http://user:secret@proxy.example:3128`);
+    error.stack = 'SECRET_STACK_SHOULD_NOT_BE_STORED';
+    const { parseNic } = await loadParser();
+
+    await parseNic(axiosWithResult(Promise.reject(error)));
+    await flushParserQueue();
+
+    expect(dbState.updateParserStatus).toHaveBeenNthCalledWith(1, {
+      lastStartedAt: expect.any(Number),
+    });
+    const failureStatus = dbState.updateParserStatus.mock.calls.at(-1)?.[0];
+    expect(failureStatus).toEqual({
+      lastFinishedAt: expect.any(Number),
+      lastError: expect.any(String),
+    });
+    expect(failureStatus.lastError.length).toBeLessThanOrEqual(240);
+    expect(failureStatus.lastError).toContain('network down');
+    expect(failureStatus.lastError).not.toContain('SECRET_STACK_SHOULD_NOT_BE_STORED');
+    expect(failureStatus.lastError).not.toContain('secret');
   });
 
   it('awaits fetch, Mongo, WHOIS, and Telegram work before resolving', async () => {

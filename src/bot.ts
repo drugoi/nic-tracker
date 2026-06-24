@@ -1,5 +1,5 @@
 import { bot } from './bot-setup.js';
-import { updateSettings, getDb } from './db.js';
+import { updateSettings, getDb, getStatus } from './db.js';
 import { whoisAndParse } from './whois.js';
 import { parseNic } from './parse.js';
 import { refreshAxios } from './request.js';
@@ -17,6 +17,31 @@ async function ensureOwner(ctx: OwnerContext): Promise<boolean> {
 
   await ctx.reply('Недостаточно прав');
   return false;
+}
+
+function formatStatusDate(value: number | undefined): string {
+  return typeof value === 'number' ? new Date(value).toISOString() : 'never';
+}
+
+function shortenStatusText(value: string | undefined): string {
+  if (!value) {
+    return 'none';
+  }
+  return value.length <= 240 ? value : `${value.slice(0, 237)}...`;
+}
+
+function formatProxyStatus(proxyUrl: string | undefined): string {
+  if (!proxyUrl) {
+    return 'disabled';
+  }
+
+  try {
+    const proxy = new URL(proxyUrl);
+    const port = proxy.port ? `:${proxy.port}` : '';
+    return `enabled (${proxy.protocol}//${proxy.hostname}${port})`;
+  } catch {
+    return 'enabled (redacted)';
+  }
 }
 
 bot.catch((err, ctx) => {
@@ -69,6 +94,26 @@ bot.command('getproxy', async (ctx) => {
   const doc = await database.collection('settings').findOne({});
   const proxyUrl = doc && typeof doc.proxy === 'string' ? doc.proxy : undefined;
   await ctx.reply(proxyUrl || 'Прокси не установлена');
+});
+
+bot.command('status', async (ctx) => {
+  if (!(await ensureOwner(ctx))) {
+    return;
+  }
+
+  const status = await getStatus();
+  const database = await getDb();
+  const doc = await database.collection('settings').findOne({});
+  const proxyUrl = doc && typeof doc.proxy === 'string' ? doc.proxy : undefined;
+
+  await ctx.reply([
+    `Last started: ${formatStatusDate(status.lastStartedAt)}`,
+    `Last finished: ${formatStatusDate(status.lastFinishedAt)}`,
+    `Last success: ${formatStatusDate(status.lastSuccessAt)}`,
+    `Last domain count: ${status.lastDomainCount ?? 'unknown'}`,
+    `Last error: ${shortenStatusText(status.lastError)}`,
+    `Proxy: ${formatProxyStatus(proxyUrl)}`,
+  ].join('\n'));
 });
 
 bot.command('whois', async (ctx) => {
