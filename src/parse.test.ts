@@ -172,14 +172,17 @@ describe('parseNic', () => {
     await parseNic(axiosWithResult(Promise.resolve({ data: fixtureHtml })));
     await flushParserQueue();
 
-    expect(dbState.domainsCollection.findOne).toHaveBeenCalledTimes(2);
+    expect(dbState.domainsCollection.findOne).toHaveBeenCalledTimes(3);
     expect(dbState.domainsCollection.findOne).toHaveBeenNthCalledWith(1, {
       domain: 'alpha-example.kz',
     });
     expect(dbState.domainsCollection.findOne).toHaveBeenNthCalledWith(2, {
       domain: 'beta-example.kz',
     });
-    expect(dbState.domainsCollection.insertOne).toHaveBeenCalledTimes(2);
+    expect(dbState.domainsCollection.findOne).toHaveBeenNthCalledWith(3, {
+      domain: 'gamma-example.test',
+    });
+    expect(dbState.domainsCollection.insertOne).toHaveBeenCalledTimes(3);
     expect(dbState.domainsCollection.insertOne).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
@@ -194,7 +197,14 @@ describe('parseNic', () => {
         nicDate: '2026-06-24 12:29',
       }),
     );
-    expect(whoisMocks.whoisAndParse).toHaveBeenCalledTimes(2);
+    expect(dbState.domainsCollection.insertOne).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({
+        domain: 'gamma-example.test',
+        nicDate: '2026-06-24 12:28',
+      }),
+    );
+    expect(whoisMocks.whoisAndParse).toHaveBeenCalledTimes(3);
     expect(whoisMocks.whoisAndParse).not.toHaveBeenCalledWith(
       'registration rules',
       false,

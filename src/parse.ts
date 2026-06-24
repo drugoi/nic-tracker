@@ -35,6 +35,10 @@ async function parseDomain(
   return domainsData;
 }
 
+function isDomainLikeText(value: string): boolean {
+  return value.length > 0 && value.includes('.') && !/\s/.test(value);
+}
+
 let activeParseNic: Promise<void> | undefined;
 
 export function parseNic(axiosInstance?: AxiosInstance): Promise<void> {
@@ -67,7 +71,7 @@ async function runParseNic(axiosInstance?: AxiosInstance): Promise<void> {
       const row = $(domain);
       const link = $('a', domain).first();
       const domainName = link.text().trim();
-      if (link.length > 0 && domainName.toLowerCase().endsWith('.kz')) {
+      if (link.length > 0 && isDomainLikeText(domainName)) {
         const newDomain: Pick<DomainDoc, 'domain' | 'nicDate' | 'date'> = {
           domain: domainName,
           nicDate: row.find('td:first-child').text(),
