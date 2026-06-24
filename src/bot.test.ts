@@ -23,7 +23,10 @@ const botMocks = vi.hoisted(() => ({
   stop: vi.fn(),
 }));
 const dbMocks = vi.hoisted(() => ({
+  addWatchTerm: vi.fn(),
   getDb: vi.fn(),
+  getWatchTerms: vi.fn(),
+  removeWatchTerm: vi.fn(),
   updateSettings: vi.fn(),
 }));
 const requestMocks = vi.hoisted(() => ({
@@ -73,7 +76,10 @@ describe('bot commands', () => {
     botMocks.command.mockClear();
     botMocks.launch.mockClear();
     botMocks.stop.mockClear();
+    dbMocks.addWatchTerm.mockReset();
     dbMocks.getDb.mockReset();
+    dbMocks.getWatchTerms.mockReset();
+    dbMocks.removeWatchTerm.mockReset();
     dbMocks.updateSettings.mockReset();
     requestMocks.getInstance.mockReset();
     requestMocks.refreshAxios.mockReset();
@@ -191,6 +197,110 @@ describe('bot commands', () => {
     expect(requestMocks.getInstance).not.toHaveBeenCalled();
     expect(requestMocks.refreshAxios).not.toHaveBeenCalled();
     expect(parseMocks.parseNic).not.toHaveBeenCalled();
+  });
+
+  it('lists configured watch terms for the owner', async () => {
+    dbMocks.getWatchTerms.mockResolvedValue(['bereke', 'acme']);
+    const handler = await loadHandler('watchterms');
+    const ctx: TestContext = {
+      from: { id: 1001 },
+      reply: vi.fn(),
+    };
+
+    await handler(ctx);
+
+    expect(dbMocks.getWatchTerms).toHaveBeenCalledOnce();
+    expect(ctx.reply).toHaveBeenCalledWith('Отслеживаемые термины: bereke, acme');
+  });
+
+  it('adds a watch term for the owner', async () => {
+    dbMocks.addWatchTerm.mockResolvedValue(['bereke', 'acme']);
+    const handler = await loadHandler('addwatchterm');
+    const ctx: TestContext = {
+      from: { id: 1001 },
+      message: {
+        text: '/addwatchterm acme',
+      },
+      reply: vi.fn(),
+    };
+
+    await handler(ctx);
+
+    expect(dbMocks.addWatchTerm).toHaveBeenCalledWith('acme');
+    expect(ctx.reply).toHaveBeenCalledWith('Отслеживаемые термины: bereke, acme');
+  });
+
+  it('rejects add watch term without a term', async () => {
+    const handler = await loadHandler('addwatchterm');
+    const ctx: TestContext = {
+      from: { id: 1001 },
+      message: {
+        text: '/addwatchterm',
+      },
+      reply: vi.fn(),
+    };
+
+    await handler(ctx);
+
+    expect(dbMocks.addWatchTerm).not.toHaveBeenCalled();
+    expect(ctx.reply).toHaveBeenCalledWith('Нужно указать термин');
+  });
+
+  it('removes a watch term for the owner', async () => {
+    dbMocks.removeWatchTerm.mockResolvedValue(['acme']);
+    const handler = await loadHandler('removewatchterm');
+    const ctx: TestContext = {
+      from: { id: 1001 },
+      message: {
+        text: '/removewatchterm bereke',
+      },
+      reply: vi.fn(),
+    };
+
+    await handler(ctx);
+
+    expect(dbMocks.removeWatchTerm).toHaveBeenCalledWith('bereke');
+    expect(ctx.reply).toHaveBeenCalledWith('Отслеживаемые термины: acme');
+  });
+
+  it('rejects watch term listing from non-owner users', async () => {
+    const handler = await loadHandler('watchterms');
+    const ctx: TestContext = {
+      from: { id: 2002 },
+      reply: vi.fn(),
+    };
+
+    await handler(ctx);
+
+    expect(ctx.reply).toHaveBeenCalledWith('Недостаточно прав');
+    expect(dbMocks.getWatchTerms).not.toHaveBeenCalled();
+  });
+
+  it('rejects watch term updates from non-owner users', async () => {
+    const addHandler = await loadHandler('addwatchterm');
+    const removeHandler = await loadHandler('removewatchterm');
+    const addCtx: TestContext = {
+      from: { id: 2002 },
+      message: {
+        text: '/addwatchterm acme',
+      },
+      reply: vi.fn(),
+    };
+    const removeCtx: TestContext = {
+      from: { id: 2002 },
+      message: {
+        text: '/removewatchterm acme',
+      },
+      reply: vi.fn(),
+    };
+
+    await addHandler(addCtx);
+    await removeHandler(removeCtx);
+
+    expect(addCtx.reply).toHaveBeenCalledWith('Недостаточно прав');
+    expect(removeCtx.reply).toHaveBeenCalledWith('Недостаточно прав');
+    expect(dbMocks.addWatchTerm).not.toHaveBeenCalled();
+    expect(dbMocks.removeWatchTerm).not.toHaveBeenCalled();
   });
 
   it('replies with full WHOIS data for the requested domain', async () => {

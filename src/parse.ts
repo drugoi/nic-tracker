@@ -39,6 +39,11 @@ function isDomainLikeText(value: string): boolean {
   return value.length > 0 && value.includes('.') && !/\s/.test(value);
 }
 
+function matchesWatchTerm(domain: string, watchTerms: string[]): boolean {
+  const normalizedDomain = domain.toLowerCase();
+  return watchTerms.some((term) => normalizedDomain.includes(term.toLowerCase()));
+}
+
 let activeParseNic: Promise<void> | undefined;
 
 export function parseNic(axiosInstance?: AxiosInstance): Promise<void> {
@@ -52,6 +57,7 @@ export function parseNic(axiosInstance?: AxiosInstance): Promise<void> {
 async function runParseNic(axiosInstance?: AxiosInstance): Promise<void> {
   const requestInstance = axiosInstance ?? (await request.getInstance());
   const dbInstance = await db.getDb();
+  const watchTerms = await db.getWatchTerms();
 
   try {
     const res = await requestInstance.get('');
@@ -98,7 +104,7 @@ async function runParseNic(axiosInstance?: AxiosInstance): Promise<void> {
         ) {
           const domainsData = await parseDomain(domain);
 
-          if (domain.domain.includes('bereke')) {
+          if (matchesWatchTerm(domain.domain, watchTerms)) {
             await bot.telegram.sendMessage(
               env.tgOwnerId,
               `Новый домен: ${domain.domain}`,

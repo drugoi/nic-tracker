@@ -115,3 +115,94 @@ describe('updateSettings', () => {
     expect(dbState.settingsCollection.insertOne).not.toHaveBeenCalled();
   });
 });
+
+describe('watch terms settings', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    dbState.domainsCollection.createIndexes.mockReset();
+    dbState.domainsCollection.indexes.mockReset();
+    dbState.settingsCollection.findOne.mockReset();
+    dbState.settingsCollection.insertOne.mockReset();
+    dbState.settingsCollection.updateOne.mockReset();
+    dbState.collection.mockClear();
+    dbState.client.connect.mockReset();
+    dbState.client.db.mockClear();
+    dbState.MongoClient.mockClear();
+    dbState.MongoClient.mockReturnValue(dbState.client);
+  });
+
+  it('defaults missing watch terms to bereke when reading', async () => {
+    const { getWatchTerms } = await loadInitializedDb();
+    dbState.settingsCollection.findOne.mockResolvedValue({
+      proxy: 'http://proxy.example:3128',
+    });
+
+    await expect(getWatchTerms()).resolves.toEqual(['bereke']);
+  });
+
+  it('defaults empty watch terms to bereke when reading', async () => {
+    const { getWatchTerms } = await loadInitializedDb();
+    dbState.settingsCollection.findOne.mockResolvedValue({
+      proxy: 'http://proxy.example:3128',
+      watchTerms: [],
+    });
+
+    await expect(getWatchTerms()).resolves.toEqual(['bereke']);
+  });
+
+  it('reads configured watch terms', async () => {
+    const { getWatchTerms } = await loadInitializedDb();
+    dbState.settingsCollection.findOne.mockResolvedValue({
+      proxy: 'http://proxy.example:3128',
+      watchTerms: ['acme', 'Bereke'],
+    });
+
+    await expect(getWatchTerms()).resolves.toEqual(['acme', 'Bereke']);
+  });
+
+  it('adds a watch term without overwriting existing settings fields', async () => {
+    const { addWatchTerm } = await loadInitializedDb();
+    dbState.settingsCollection.findOne.mockResolvedValue({
+      proxy: 'http://proxy.example:3128',
+      parserStatus: { lastRunAt: 123 },
+      watchTerms: ['bereke'],
+    });
+
+    await expect(addWatchTerm('acme')).resolves.toEqual(['bereke', 'acme']);
+
+    expect(dbState.settingsCollection.updateOne).toHaveBeenCalledWith(
+      {},
+      { $set: { watchTerms: ['bereke', 'acme'] } },
+      { upsert: true },
+    );
+  });
+
+  it('does not duplicate a watch term case-insensitively', async () => {
+    const { addWatchTerm } = await loadInitializedDb();
+    dbState.settingsCollection.findOne.mockResolvedValue({
+      proxy: 'http://proxy.example:3128',
+      watchTerms: ['Bereke'],
+    });
+
+    await expect(addWatchTerm('bereke')).resolves.toEqual(['Bereke']);
+
+    expect(dbState.settingsCollection.updateOne).not.toHaveBeenCalled();
+  });
+
+  it('removes a watch term without overwriting existing settings fields', async () => {
+    const { removeWatchTerm } = await loadInitializedDb();
+    dbState.settingsCollection.findOne.mockResolvedValue({
+      proxy: 'http://proxy.example:3128',
+      parserStatus: { lastRunAt: 123 },
+      watchTerms: ['bereke', 'acme'],
+    });
+
+    await expect(removeWatchTerm('BEREKE')).resolves.toEqual(['acme']);
+
+    expect(dbState.settingsCollection.updateOne).toHaveBeenCalledWith(
+      {},
+      { $set: { watchTerms: ['acme'] } },
+      { upsert: true },
+    );
+  });
+});

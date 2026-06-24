@@ -1,5 +1,11 @@
 import { bot } from './bot-setup.js';
-import { updateSettings, getDb } from './db.js';
+import {
+  addWatchTerm,
+  getDb,
+  getWatchTerms,
+  removeWatchTerm,
+  updateSettings,
+} from './db.js';
 import { whoisAndParse } from './whois.js';
 import { parseNic } from './parse.js';
 import { refreshAxios } from './request.js';
@@ -17,6 +23,18 @@ async function ensureOwner(ctx: OwnerContext): Promise<boolean> {
 
   await ctx.reply('Недостаточно прав');
   return false;
+}
+
+function getCommandArgument(text: string, command: string): string {
+  return text.replace(command, '').trim();
+}
+
+function formatWatchTerms(watchTerms: string[]): string {
+  if (watchTerms.length === 0) {
+    return 'Отслеживаемые термины не установлены';
+  }
+
+  return `Отслеживаемые термины: ${watchTerms.join(', ')}`;
 }
 
 bot.catch((err, ctx) => {
@@ -69,6 +87,55 @@ bot.command('getproxy', async (ctx) => {
   const doc = await database.collection('settings').findOne({});
   const proxyUrl = doc && typeof doc.proxy === 'string' ? doc.proxy : undefined;
   await ctx.reply(proxyUrl || 'Прокси не установлена');
+});
+
+bot.command('watchterms', async (ctx) => {
+  if (!(await ensureOwner(ctx))) {
+    return;
+  }
+
+  const watchTerms = await getWatchTerms();
+  await ctx.reply(formatWatchTerms(watchTerms));
+});
+
+bot.command('addwatchterm', async (ctx) => {
+  if (!(await ensureOwner(ctx))) {
+    return;
+  }
+
+  const { message } = ctx;
+  if (!message || !('text' in message)) {
+    return;
+  }
+
+  const term = getCommandArgument(message.text, '/addwatchterm');
+  if (!term) {
+    await ctx.reply('Нужно указать термин');
+    return;
+  }
+
+  const watchTerms = await addWatchTerm(term);
+  await ctx.reply(formatWatchTerms(watchTerms));
+});
+
+bot.command('removewatchterm', async (ctx) => {
+  if (!(await ensureOwner(ctx))) {
+    return;
+  }
+
+  const { message } = ctx;
+  if (!message || !('text' in message)) {
+    return;
+  }
+
+  const term = getCommandArgument(message.text, '/removewatchterm');
+  if (!term) {
+    await ctx.reply('Нужно указать термин');
+    return;
+  }
+
+  const watchTerms = await removeWatchTerm(term);
+  await ctx.reply(formatWatchTerms(watchTerms));
 });
 
 bot.command('whois', async (ctx) => {
