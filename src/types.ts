@@ -3,6 +3,8 @@ import type { WhoisField } from 'parse-whois';
 
 export interface SettingsDoc {
   proxy?: string;
+  parserStatus?: ParserStatus;
+  watchTerms?: string[];
 }
 
 export interface DomainDoc {
@@ -27,4 +29,12 @@ export interface ParsedWhois {
 export interface ProxyParams {
   host: string;
   port: number;
+}
+
+export interface ParserStatus {
+  lastStartedAt?: number;
+  lastFinishedAt?: number;
+  lastSuccessAt?: number;
+  lastError?: string;
+  lastDomainCount?: number;
 }
