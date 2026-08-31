@@ -50,6 +50,21 @@ describe('whoisAndParse', () => {
     expect(parseWhoIsData).toHaveBeenCalledWith('raw whois text');
   });
 
+  it('reads the registrar from KazNIC\'s Current Registar field', async () => {
+    parseWhoIsData.mockReturnValue([
+      { attribute: 'Current Registar', value: 'HOSTER.KZ' },
+    ]);
+    vi.mocked(whois.lookup).mockImplementation((_domain, _opts, cb) => {
+      cb(null, 'raw whois text');
+    });
+
+    const result = await whoisAndParse('test.kz', false);
+
+    expect(result).toEqual(expect.objectContaining({
+      parsedData: expect.objectContaining({ registrar: 'HOSTER.KZ' }),
+    }));
+  });
+
   it('resolves raw string when returnFull is true', async () => {
     vi.mocked(whois.lookup).mockImplementation((_domain, _opts, cb) => {
       cb(null, 'full raw');

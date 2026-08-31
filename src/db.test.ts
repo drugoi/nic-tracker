@@ -6,6 +6,10 @@ const dbState = vi.hoisted(() => {
       createIndexes: vi.fn(),
       indexes: vi.fn(),
     },
+    oldDomainsCollection: {
+      createIndexes: vi.fn(),
+      indexes: vi.fn(),
+    },
     settingsCollection: {
       findOne: vi.fn(),
       insertOne: vi.fn(),
@@ -22,6 +26,9 @@ const dbState = vi.hoisted(() => {
   state.collection.mockImplementation((name: string) => {
     if (name === 'domains') {
       return state.domainsCollection;
+    }
+    if (name === 'oldDomains') {
+      return state.oldDomainsCollection;
     }
     if (name === 'settings') {
       return state.settingsCollection;
@@ -51,6 +58,7 @@ async function loadInitializedDb(): Promise<typeof import('./db.js')> {
   const dbModule = await import('./db.js');
 
   dbState.domainsCollection.indexes.mockResolvedValue([{ name: 'domain_1' }]);
+  dbState.oldDomainsCollection.indexes.mockResolvedValue([{ name: 'nicDate_1' }]);
   dbState.settingsCollection.findOne.mockResolvedValue({ proxy: '' });
   await dbModule.setupDb();
 
@@ -113,6 +121,51 @@ describe('updateSettings', () => {
       { $set: { proxy: '' } },
     );
     expect(dbState.settingsCollection.insertOne).not.toHaveBeenCalled();
+  });
+});
+
+describe('domain indexes', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    dbState.domainsCollection.createIndexes.mockReset();
+    dbState.domainsCollection.indexes.mockReset();
+    dbState.settingsCollection.findOne.mockReset();
+    dbState.settingsCollection.insertOne.mockReset();
+    dbState.settingsCollection.updateOne.mockReset();
+    dbState.collection.mockClear();
+    dbState.client.connect.mockReset();
+    dbState.client.db.mockClear();
+    dbState.MongoClient.mockClear();
+    dbState.MongoClient.mockReturnValue(dbState.client);
+  });
+
+  it('creates domain indexes when the collection is absent', async () => {
+    const dbModule = await import('./db.js');
+    dbState.domainsCollection.indexes.mockRejectedValue(new Error('NamespaceNotFound'));
+    dbState.settingsCollection.findOne.mockResolvedValue({ proxy: '' });
+
+    await dbModule.setupDb();
+
+    expect(dbState.domainsCollection.createIndexes).toHaveBeenCalledWith([
+      { key: { domain: 1 }, unique: true },
+      { key: { nicDate: 1 } },
+    ]);
+  });
+
+  it('creates the archived-domain date index when the collection is absent', async () => {
+    const dbModule = await import('./db.js');
+    dbState.domainsCollection.indexes.mockResolvedValue([
+      { name: 'domain_1' },
+      { name: 'nicDate_1' },
+    ]);
+    dbState.oldDomainsCollection.indexes.mockRejectedValue(new Error('NamespaceNotFound'));
+    dbState.settingsCollection.findOne.mockResolvedValue({ proxy: '' });
+
+    await dbModule.setupDb();
+
+    expect(dbState.oldDomainsCollection.createIndexes).toHaveBeenCalledWith([
+      { key: { nicDate: 1 } },
+    ]);
   });
 });
 

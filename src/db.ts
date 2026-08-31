@@ -218,14 +218,18 @@ async function setupDomainIndexes(): Promise<void> {
     return;
   }
   try {
-    const indexes = await db.collection('domains').indexes();
-    if (!indexes.some((index) => index.name === 'domain_1')) {
-      console.log('[INDEXES] creating domain_1');
-      await db.collection('domains').createIndexes([
-        { key: { domain: 1 }, unique: true },
-      ]);
-      console.log('[INDEXES] created');
-    }
+    console.log('[INDEXES] ensuring domain indexes');
+    await db.collection('domains').createIndexes([
+      { key: { domain: 1 }, unique: true },
+      { key: { nicDate: 1 } },
+    ]);
+    console.log('[INDEXES] created');
+
+    console.log('[INDEXES] ensuring oldDomains nicDate_1');
+    await db.collection('oldDomains').createIndexes([
+      { key: { nicDate: 1 } },
+    ]);
+    console.log('[INDEXES] created');
   } catch (err) {
     console.error('[MongoDB] setup indexes error', err);
   }

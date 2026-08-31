@@ -23,7 +23,7 @@ describe('cleanFromPersonalData', () => {
 });
 
 describe('prepareDomainMessage', () => {
-  it('formats a concise message with public organisation data', () => {
+  it('formats a concise MarkdownV2 message without emoji', () => {
     const text = prepareDomainMessage({
       domain: 'example.kz',
       nicDate: '31.08.2026',
@@ -35,10 +35,10 @@ describe('prepareDomainMessage', () => {
     });
 
     expect(text).toBe(
-      '🆕 *example\\.kz*\n'
-      + '📅 31\\.08\\.2026\n'
-      + '🏢 Организация: ACME\n'
-      + '🏷 Регистратор: Reg Inc\n\n'
+      '*example\\.kz*\n'
+      + '*Дата регистрации:* 31\\.08\\.2026\n'
+      + '*Организация:* ACME\n'
+      + '*Регистратор:* Reg Inc\n\n'
       + '[Whois](https://nic\\.kz/cgi\\-bin/whois?query=example\\.kz)',
     );
     expect(text).not.toContain('John');
@@ -55,10 +55,10 @@ describe('prepareDomainMessage', () => {
     });
 
     expect(text).toBe(
-      '🆕 *x\\.kz*\n'
-      + '📅 31\\.08\\.2026\n'
-      + '🔒 Данные владельца скрыты\n'
-      + '🏷 Регистратор: Reg Inc\n\n'
+      '*x\\.kz*\n'
+      + '*Дата регистрации:* 31\\.08\\.2026\n'
+      + '*Данные владельца:* скрыты\n'
+      + '*Регистратор:* Reg Inc\n\n'
       + '[Whois](https://nic\\.kz/cgi\\-bin/whois?query=x\\.kz)',
     );
   });
@@ -67,7 +67,7 @@ describe('prepareDomainMessage', () => {
     const text = prepareDomainMessage({ domain: 'only.kz' });
 
     expect(text).toBe(
-      '🆕 *only\\.kz*\n\n'
+      '*only\\.kz*\n\n'
       + '[Whois](https://nic\\.kz/cgi\\-bin/whois?query=only\\.kz)',
     );
   });

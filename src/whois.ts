@@ -17,7 +17,7 @@ function findFieldsByAttrs(data: WhoisFieldRow[], fields: string[]): WhoisFieldR
 
 function findRegistrar(data: WhoisFieldRow[]): WhoisFieldRow {
   return (
-    data.find((item) => item.attribute.toLowerCase().includes('registrar')) ?? {
+    data.find((item) => /regist(?:rar|ar)/i.test(item.attribute)) ?? {
       attribute: '',
       value: '',
     }

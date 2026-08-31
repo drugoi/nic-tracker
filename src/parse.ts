@@ -41,6 +41,13 @@ function isDomainLikeText(value: string): boolean {
   return value.length > 0 && value.includes('.') && !/\s/.test(value);
 }
 
+function normalizeNicDate(value: string): string {
+  const trimmed = value.trim();
+  const match = /^(\d{4})-(\d{2})-(\d{2})(?:[ T].*)?$/.exec(trimmed);
+
+  return match ? `${match[3]}.${match[2]}.${match[1]}` : trimmed;
+}
+
 function matchesWatchTerm(domain: string, watchTerms: string[]): boolean {
   const normalizedDomain = domain.toLowerCase();
   return watchTerms.some((term) => normalizedDomain.includes(term.toLowerCase()));
@@ -92,6 +99,10 @@ export function parseNic(axiosInstance?: AxiosInstance): Promise<void> {
   return activeParseNic;
 }
 
+export async function waitForParserIdle(): Promise<void> {
+  await activeParseNic;
+}
+
 async function runParseNic(axiosInstance?: AxiosInstance): Promise<void> {
   const requestInstance = axiosInstance ?? (await request.getInstance());
   const dbInstance = await db.getDb();
@@ -120,7 +131,7 @@ async function runParseNic(axiosInstance?: AxiosInstance): Promise<void> {
       if (link.length > 0 && isDomainLikeText(domainName)) {
         const newDomain: Pick<DomainDoc, 'domain' | 'nicDate' | 'date'> = {
           domain: domainName,
-          nicDate: row.find('td:first-child').text(),
+          nicDate: normalizeNicDate(row.find('td:first-child').text()),
           date: Date.now(),
         };
         newDomains.push(newDomain);

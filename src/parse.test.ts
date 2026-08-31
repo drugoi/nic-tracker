@@ -162,7 +162,7 @@ describe('parseNic', () => {
     expect(dbState.domainsCollection.insertOne).toHaveBeenCalledWith(
       expect.objectContaining({
         domain: 'example.kz',
-        nicDate: '2026-06-24',
+        nicDate: '24.06.2026',
         whoisData: parsedDomainData.whoisData,
         whois: parsedDomainData.parsedData,
       }),
@@ -200,21 +200,21 @@ describe('parseNic', () => {
       1,
       expect.objectContaining({
         domain: 'alpha-example.kz',
-        nicDate: '2026-06-24 12:30',
+        nicDate: '24.06.2026',
       }),
     );
     expect(dbState.domainsCollection.insertOne).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({
         domain: 'beta-example.kz',
-        nicDate: '2026-06-24 12:29',
+        nicDate: '24.06.2026',
       }),
     );
     expect(dbState.domainsCollection.insertOne).toHaveBeenNthCalledWith(
       3,
       expect.objectContaining({
         domain: 'gamma-example.test',
-        nicDate: '2026-06-24 12:28',
+        nicDate: '24.06.2026',
       }),
     );
     expect(whoisMocks.whoisAndParse).toHaveBeenCalledTimes(3);
@@ -474,5 +474,28 @@ describe('parseNic', () => {
     expect(whoisMocks.whoisAndParse).toHaveBeenCalledTimes(1);
     expect(dbState.domainsCollection.insertOne).toHaveBeenCalledTimes(1);
     expect(botMocks.telegram.sendMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('waits for an active parser run to settle', async () => {
+    const response = deferred<{ data: string }>();
+    dbState.domainsCollection.findOne.mockResolvedValue(null);
+    whoisMocks.whoisAndParse.mockResolvedValue(parsedDomainData);
+    const { parseNic, waitForParserIdle } = await loadParser();
+
+    const parsing = parseNic(axiosWithResult(response.promise));
+
+    let idle = false;
+    const waiting = waitForParserIdle().then(() => {
+      idle = true;
+    });
+    await flushParserQueue();
+
+    expect(idle).toBe(false);
+
+    response.resolve({ data: nicHtml });
+    await parsing;
+    await waiting;
+
+    expect(idle).toBe(true);
   });
 });

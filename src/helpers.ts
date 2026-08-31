@@ -24,20 +24,20 @@ export function prepareDomainMessage({
 }: DomainMessageInput): string {
   const escapedDomain = escapeMarkdown(domain);
   const whoisUrl = `https://nic\\.kz/cgi\\-bin/whois?query=${escapedDomain}`;
-  const lines = [`🆕 *${escapedDomain}*`];
+  const lines = [`*${escapedDomain}*`];
 
   if (nicDate) {
-    lines.push(`📅 ${escapeMarkdown(nicDate)}`);
+    lines.push(`*Дата регистрации:* ${escapeMarkdown(nicDate)}`);
   }
 
   if (orgName === '[HIDDEN PERSONAL DATA]') {
-    lines.push('🔒 Данные владельца скрыты');
+    lines.push('*Данные владельца:* скрыты');
   } else if (orgName) {
-    lines.push(`🏢 Организация: ${escapeMarkdown(orgName)}`);
+    lines.push(`*Организация:* ${escapeMarkdown(orgName)}`);
   }
 
   if (registrar) {
-    lines.push(`🏷 Регистратор: ${escapeMarkdown(registrar)}`);
+    lines.push(`*Регистратор:* ${escapeMarkdown(registrar)}`);
   }
 
   lines.push('', `[Whois](${whoisUrl})`);
