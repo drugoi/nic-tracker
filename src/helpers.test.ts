@@ -35,7 +35,7 @@ describe('prepareDomainMessage', () => {
     });
 
     expect(text).toBe(
-      '*example\\.kz*\n'
+      '*example\\.kz*\n\n'
       + '*Дата регистрации:* 31\\.08\\.2026\n'
       + '*Организация:* ACME\n'
       + '*Регистратор:* Reg Inc\n\n'
@@ -55,7 +55,7 @@ describe('prepareDomainMessage', () => {
     });
 
     expect(text).toBe(
-      '*x\\.kz*\n'
+      '*x\\.kz*\n\n'
       + '*Дата регистрации:* 31\\.08\\.2026\n'
       + '*Данные владельца:* скрыты\n'
       + '*Регистратор:* Reg Inc\n\n'

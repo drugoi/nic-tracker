@@ -40,6 +40,10 @@ export function prepareDomainMessage({
     lines.push(`*Регистратор:* ${escapeMarkdown(registrar)}`);
   }
 
+  if (lines.length > 1) {
+    lines.splice(1, 0, '');
+  }
+
   lines.push('', `[Whois](${whoisUrl})`);
   return lines.join('\n');
 }
