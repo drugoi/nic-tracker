@@ -1,6 +1,9 @@
 import type { ParsedWhois } from './types.js';
 
-export type DomainMessageInput = { domain: string } & Partial<ParsedWhois>;
+export type DomainMessageInput = {
+  domain: string;
+  nicDate?: string;
+} & Partial<ParsedWhois>;
 
 export function escapeMarkdown(text: string | undefined): string {
   if (!text) {
@@ -17,24 +20,26 @@ export function prepareDomainMessage({
   domain,
   orgName,
   registrar,
-  clientName,
-  clientEmail,
-  clientAddress,
+  nicDate,
 }: DomainMessageInput): string {
   const escapedDomain = escapeMarkdown(domain);
   const whoisUrl = `https://nic\\.kz/cgi\\-bin/whois?query=${escapedDomain}`;
+  const lines = [`🆕 *${escapedDomain}*`];
 
-  if (orgName && orgName !== '[HIDDEN PERSONAL DATA]') {
-    return [
-      `*Домен:* ${escapedDomain} \\- [Whois](${whoisUrl})\n`,
-      `*Организация:* ${escapeMarkdown(orgName)}`,
-      `*Регистратор:* ${escapeMarkdown(registrar || '')}`,
-      `*Клиент:* ${escapeMarkdown(cleanFromPersonalData(clientName || ''))}`,
-      `*Email:* ${escapeMarkdown(clientEmail || '')}`,
-      `*Адрес*: ${escapeMarkdown(clientAddress || '')}`,
-      '',
-    ].join('\n');
+  if (nicDate) {
+    lines.push(`📅 ${escapeMarkdown(nicDate)}`);
   }
 
-  return `*Домен:* ${escapedDomain} \\- [Whois](${whoisUrl})\n\n`;
+  if (orgName === '[HIDDEN PERSONAL DATA]') {
+    lines.push('🔒 Данные владельца скрыты');
+  } else if (orgName) {
+    lines.push(`🏢 Организация: ${escapeMarkdown(orgName)}`);
+  }
+
+  if (registrar) {
+    lines.push(`🏷 Регистратор: ${escapeMarkdown(registrar)}`);
+  }
+
+  lines.push('', `[Whois](${whoisUrl})`);
+  return lines.join('\n');
 }

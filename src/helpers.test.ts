@@ -23,31 +23,52 @@ describe('cleanFromPersonalData', () => {
 });
 
 describe('prepareDomainMessage', () => {
-  it('formats full message when org is visible', () => {
+  it('formats a concise message with public organisation data', () => {
     const text = prepareDomainMessage({
       domain: 'example.kz',
+      nicDate: '31.08.2026',
       orgName: 'ACME',
       registrar: 'Reg Inc',
       clientName: 'John 123456789012',
       clientEmail: 'a@b.c',
       clientAddress: 'Street 1',
     });
-    expect(text).toContain('example\\.kz');
-    expect(text).toContain('ACME');
-    expect(text).toMatch(/REDACTED/);
+
+    expect(text).toBe(
+      '🆕 *example\\.kz*\n'
+      + '📅 31\\.08\\.2026\n'
+      + '🏢 Организация: ACME\n'
+      + '🏷 Регистратор: Reg Inc\n\n'
+      + '[Whois](https://nic\\.kz/cgi\\-bin/whois?query=example\\.kz)',
+    );
+    expect(text).not.toContain('John');
+    expect(text).not.toContain('a@b.c');
+    expect(text).not.toContain('Street');
   });
 
-  it('formats minimal message for hidden org', () => {
+  it('marks owner data as hidden and keeps Whois on a separate line', () => {
     const text = prepareDomainMessage({
       domain: 'x.kz',
       orgName: '[HIDDEN PERSONAL DATA]',
+      registrar: 'Reg Inc',
+      nicDate: '31.08.2026',
     });
-    expect(text).toContain('x\\.kz');
-    expect(text).not.toContain('Организация');
+
+    expect(text).toBe(
+      '🆕 *x\\.kz*\n'
+      + '📅 31\\.08\\.2026\n'
+      + '🔒 Данные владельца скрыты\n'
+      + '🏷 Регистратор: Reg Inc\n\n'
+      + '[Whois](https://nic\\.kz/cgi\\-bin/whois?query=x\\.kz)',
+    );
   });
 
-  it('handles missing whois fields', () => {
+  it('omits unavailable optional fields', () => {
     const text = prepareDomainMessage({ domain: 'only.kz' });
-    expect(text).toContain('only\\.kz');
+
+    expect(text).toBe(
+      '🆕 *only\\.kz*\n\n'
+      + '[Whois](https://nic\\.kz/cgi\\-bin/whois?query=only\\.kz)',
+    );
   });
 });
