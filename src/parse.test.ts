@@ -256,7 +256,6 @@ describe('parseNic', () => {
     dbState.domainsCollection.findOne.mockResolvedValue(null);
     const { parseNic } = await loadParser();
 
-    await parseNic(axiosWithResult(Promise.resolve({ data: '<main></main>' })));
     await parseNic(
       axiosWithResult(
         Promise.resolve({
@@ -270,6 +269,24 @@ describe('parseNic', () => {
     expect(dbState.domainsCollection.insertOne).not.toHaveBeenCalled();
     expect(whoisMocks.whoisAndParse).not.toHaveBeenCalled();
     expect(botMocks.telegram.sendMessage).not.toHaveBeenCalled();
+  });
+
+  it('notifies the owner when the NIC registration list is missing', async () => {
+    const { parseNic } = await loadParser();
+
+    await parseNic(axiosWithResult(Promise.resolve({ data: '<main></main>' })));
+    await flushParserQueue();
+
+    expect(dbState.updateParserStatus).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        lastError: 'NIC registration list is missing',
+      }),
+    );
+    expect(botMocks.telegram.sendMessage).toHaveBeenCalledWith(
+      'owner-id',
+      'NIC registration list is missing',
+      { parse_mode: 'Markdown' },
+    );
   });
 
   it('skips an existing domain younger than 10 days', async () => {

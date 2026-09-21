@@ -115,11 +115,16 @@ async function runParseNic(axiosInstance?: AxiosInstance): Promise<void> {
     const legacyDomainsTable = $(
       '#last-ten-table > tbody > tr:nth-child(2) > td > table > tbody',
     );
-    const currentDomainRows = $('.last10-box__list > li').toArray();
+    const currentRegistrationList = $('.last10-box__list');
+    const currentDomainRows = currentRegistrationList.children('li').toArray();
 
     const newDomains: Pick<DomainDoc, 'domain' | 'nicDate' | 'date'>[] = [];
 
     const legacyTableBody = legacyDomainsTable.get(0);
+    if (!legacyTableBody && currentRegistrationList.length === 0) {
+      throw new Error('NIC registration list is missing');
+    }
+
     const domainRows = legacyTableBody?.children ?? currentDomainRows;
     if (domainRows.length === 0) {
       await recordParserSuccess(0);
@@ -140,6 +145,10 @@ async function runParseNic(axiosInstance?: AxiosInstance): Promise<void> {
         };
         newDomains.push(newDomain);
       }
+    }
+
+    if (domainRows.length > 0 && newDomains.length === 0) {
+      throw new Error('NIC registration list contains no valid domains');
     }
 
     const domainsCollection = dbInstance.collection<DomainDoc>('domains');
