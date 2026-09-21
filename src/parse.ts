@@ -112,26 +112,30 @@ async function runParseNic(axiosInstance?: AxiosInstance): Promise<void> {
   try {
     const res = await requestInstance.get('');
     const $ = cheerio.load(res.data as string);
-    const domainsTable = $(
+    const legacyDomainsTable = $(
       '#last-ten-table > tbody > tr:nth-child(2) > td > table > tbody',
     );
+    const currentDomainRows = $('.last10-box__list > li').toArray();
 
     const newDomains: Pick<DomainDoc, 'domain' | 'nicDate' | 'date'>[] = [];
 
-    const tbody = domainsTable.get(0);
-    if (!tbody || !tbody.children) {
+    const legacyTableBody = legacyDomainsTable.get(0);
+    const domainRows = legacyTableBody?.children ?? currentDomainRows;
+    if (domainRows.length === 0) {
       await recordParserSuccess(0);
       return;
     }
 
-    for (const domain of tbody.children) {
+    for (const domain of domainRows) {
       const row = $(domain);
       const link = $('a', domain).first();
       const domainName = link.text().trim();
       if (link.length > 0 && isDomainLikeText(domainName)) {
         const newDomain: Pick<DomainDoc, 'domain' | 'nicDate' | 'date'> = {
           domain: domainName,
-          nicDate: normalizeNicDate(row.find('td:first-child').text()),
+          nicDate: normalizeNicDate(
+            row.find('.last10-box__date').text() || row.find('td:first-child').text(),
+          ),
           date: Date.now(),
         };
         newDomains.push(newDomain);

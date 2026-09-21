@@ -86,6 +86,18 @@ function nicHtmlFor(domain: string): string {
 </tbody></table></td></tr></tbody></table>`;
 }
 
+const currentNicHtml = `<aside>
+  <div class="last10-box">
+    <div class="last10-box__title">10 НОВЫХ РЕГИСТРАЦИЙ</div>
+    <ul class="last10-box__list">
+      <li>
+        <span class="last10-box__date">21.09.2026</span>
+        <a href="/ru/whois?query=fresh-example.kz">fresh-example.kz</a>
+      </li>
+    </ul>
+  </div>
+</aside>`;
+
 const fixtureUrl = new URL('./fixtures/nic-last-ten.html', import.meta.url);
 
 const parsedDomainData: ParsedDomainData = {
@@ -221,6 +233,22 @@ describe('parseNic', () => {
     expect(whoisMocks.whoisAndParse).not.toHaveBeenCalledWith(
       'registration rules',
       false,
+    );
+  });
+
+  it('extracts new registrations from the current NIC page structure', async () => {
+    dbState.domainsCollection.findOne.mockResolvedValue(null);
+    whoisMocks.whoisAndParse.mockResolvedValue(parsedDomainData);
+    const { parseNic } = await loadParser();
+
+    await parseNic(axiosWithResult(Promise.resolve({ data: currentNicHtml })));
+    await flushParserQueue();
+
+    expect(dbState.domainsCollection.insertOne).toHaveBeenCalledWith(
+      expect.objectContaining({
+        domain: 'fresh-example.kz',
+        nicDate: '21.09.2026',
+      }),
     );
   });
 
