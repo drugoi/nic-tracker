@@ -39,7 +39,7 @@ describe('prepareDomainMessage', () => {
       + '*Дата регистрации:* 31\\.08\\.2026\n'
       + '*Организация:* ACME\n'
       + '*Регистратор:* Reg Inc\n\n'
-      + '[Whois](https://nic\\.kz/cgi\\-bin/whois?query=example\\.kz)',
+      + '[Whois](https://nic\\.kz/ru/whois?query=example\\.kz)',
     );
     expect(text).not.toContain('John');
     expect(text).not.toContain('a@b.c');
@@ -59,7 +59,7 @@ describe('prepareDomainMessage', () => {
       + '*Дата регистрации:* 31\\.08\\.2026\n'
       + '*Данные владельца:* скрыты\n'
       + '*Регистратор:* Reg Inc\n\n'
-      + '[Whois](https://nic\\.kz/cgi\\-bin/whois?query=x\\.kz)',
+      + '[Whois](https://nic\\.kz/ru/whois?query=x\\.kz)',
     );
   });
 
@@ -68,7 +68,7 @@ describe('prepareDomainMessage', () => {
 
     expect(text).toBe(
       '*only\\.kz*\n\n'
-      + '[Whois](https://nic\\.kz/cgi\\-bin/whois?query=only\\.kz)',
+      + '[Whois](https://nic\\.kz/ru/whois?query=only\\.kz)',
     );
   });
 });

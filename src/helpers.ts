@@ -23,7 +23,7 @@ export function prepareDomainMessage({
   nicDate,
 }: DomainMessageInput): string {
   const escapedDomain = escapeMarkdown(domain);
-  const whoisUrl = `https://nic\\.kz/cgi\\-bin/whois?query=${escapedDomain}`;
+  const whoisUrl = `https://nic\\.kz/ru/whois?query=${escapedDomain}`;
   const lines = [`*${escapedDomain}*`];
 
   if (nicDate) {
