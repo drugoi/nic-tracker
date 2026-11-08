@@ -63,9 +63,9 @@ const monthNamesNominative = [
 ] as const;
 
 const almatyTimeZone = 'Asia/Almaty';
-// Hoster.KZ's published one-year .KZ registration price for 2026.
-// https://www.hoster.kz/news/2026-domains.php
-const referenceRegistrationPriceKzt = 9_580;
+// KazNIC's 2026 annual registrar tariff: 4,325 KZT plus 16% VAT.
+// https://www.nic.kz/ru/about/registry-tariff
+const kaznicRegistrarTariffKzt = 5_017;
 
 function almatyDateParts(now: Date): { year: number; month: number; day: number } {
   const parts = new Intl.DateTimeFormat('en-GB', {
@@ -152,7 +152,7 @@ export function formatDailyReport({
     `📊 *Итоги дня — ${formatDay(nicDate)}*`,
     '',
     `*Новых доменов:* ${formatNumber(total)}`,
-    `*Оценка расходов на регистрацию:* ≈ ${formatNumber(total * referenceRegistrationPriceKzt)} ₸¹`,
+    `*Оценка платежей в KazNIC:* ≈ ${formatNumber(total * kaznicRegistrarTariffKzt)} ₸¹`,
   ];
 
   if (peakHour) {
@@ -166,7 +166,7 @@ export function formatDailyReport({
     lines.push('', ...registrarLines);
   }
 
-  lines.push('', `_¹ Расчёт по тарифу Hoster\\.KZ: ${formatNumber(referenceRegistrationPriceKzt)} ₸ за домен на год\\._`);
+  lines.push('', `_¹ Тариф KazNIC для регистраторов на 2026 год: ${formatNumber(kaznicRegistrarTariffKzt)} ₸ за домен на год с НДС\\._`);
 
   return lines.join('\n');
 }
