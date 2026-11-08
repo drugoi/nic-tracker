@@ -108,6 +108,12 @@ function formatNumber(value: number): string {
   return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
+function formatKaznicEstimate(total: number): string {
+  return `*Оценка платежей в KazNIC:* ≈ ${formatNumber(total * kaznicRegistrarTariffKzt)} ₸¹`;
+}
+
+const kaznicTariffFootnote = `_¹ Тариф KazNIC для регистраторов на 2026 год: ${formatNumber(kaznicRegistrarTariffKzt)} ₸ за домен на год с НДС\\._`;
+
 function getMonthName(month: number): string {
   return monthNames[month - 1] ?? String(month);
 }
@@ -152,7 +158,7 @@ export function formatDailyReport({
     `📊 *Итоги дня — ${formatDay(nicDate)}*`,
     '',
     `*Новых доменов:* ${formatNumber(total)}`,
-    `*Оценка платежей в KazNIC:* ≈ ${formatNumber(total * kaznicRegistrarTariffKzt)} ₸¹`,
+    formatKaznicEstimate(total),
   ];
 
   if (peakHour) {
@@ -166,7 +172,7 @@ export function formatDailyReport({
     lines.push('', ...registrarLines);
   }
 
-  lines.push('', `_¹ Тариф KazNIC для регистраторов на 2026 год: ${formatNumber(kaznicRegistrarTariffKzt)} ₸ за домен на год с НДС\\._`);
+  lines.push('', kaznicTariffFootnote);
 
   return lines.join('\n');
 }
@@ -184,6 +190,7 @@ export function formatMonthlyReport({
     `📈 *Итоги ${monthName} ${year}*`,
     '',
     `*Новых доменов:* ${formatNumber(total)}`,
+    formatKaznicEstimate(total),
   ];
 
   if (priorYearTotal > 0) {
@@ -205,6 +212,8 @@ export function formatMonthlyReport({
   if (registrarLines.length > 0) {
     lines.push('', ...registrarLines);
   }
+
+  lines.push('', kaznicTariffFootnote);
 
   return lines.join('\n');
 }
