@@ -63,6 +63,9 @@ const monthNamesNominative = [
 ] as const;
 
 const almatyTimeZone = 'Asia/Almaty';
+// Hoster.KZ's published one-year .KZ registration price for 2026.
+// https://www.hoster.kz/news/2026-domains.php
+const referenceRegistrationPriceKzt = 9_580;
 
 function almatyDateParts(now: Date): { year: number; month: number; day: number } {
   const parts = new Intl.DateTimeFormat('en-GB', {
@@ -149,6 +152,7 @@ export function formatDailyReport({
     `📊 *Итоги дня — ${formatDay(nicDate)}*`,
     '',
     `*Новых доменов:* ${formatNumber(total)}`,
+    `*Оценка расходов на регистрацию:* ≈ ${formatNumber(total * referenceRegistrationPriceKzt)} ₸¹`,
   ];
 
   if (peakHour) {
@@ -161,6 +165,8 @@ export function formatDailyReport({
   if (registrarLines.length > 0) {
     lines.push('', ...registrarLines);
   }
+
+  lines.push('', `_¹ Расчёт по тарифу Hoster\\.KZ: ${formatNumber(referenceRegistrationPriceKzt)} ₸ за домен на год\\._`);
 
   return lines.join('\n');
 }
