@@ -57,13 +57,13 @@ cron.schedule('*/5 * * * *', () => {
   void runParser();
 }).start();
 
-cron.schedule('2 0 * * *', () => {
+cron.schedule('0 9 * * *', () => {
   void runDailyReport();
 }, {
   timezone: 'Asia/Almaty',
 }).start();
 
-cron.schedule('7 0 1 * *', () => {
+cron.schedule('0 9 1 * *', () => {
   void runMonthlyReport();
 }, {
   timezone: 'Asia/Almaty',
